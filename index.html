@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Công Cụ Sinh Đề Thi Bằng Claude AI</title>
-<!-- Tải thư viện Mammoth.js để đọc file Word (.docx) trực tiếp trên trình duyệt -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
 <style>
 :root{
@@ -25,7 +24,7 @@ input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0
 textarea{resize:vertical;min-height:200px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:.2s;font-size:15px}
 .btn:hover{background:var(--brand-dark)}
-.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn:disabled{opacity:.6;cursor:not-allowed;background:var(--mut)}
 .btn-outline{background:#fff;color:var(--brand);border:1.5px solid var(--brand)}
 .btn-outline:hover{background:var(--soft)}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
@@ -44,8 +43,21 @@ textarea{resize:vertical;min-height:200px}
 
 <div class="container">
   <div class="card" style="background:linear-gradient(135deg, #7c3aed, #4f46e5); color:#fff; padding:40px 32px">
-    <h1 style="color:#fff;font-size:28px">Claude AI - Bộ Tạo Đề Thi Tiếng Anh</h1>
-    <div style="opacity:0.9;font-size:15px">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (bịa nguồn).</div>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+        <h1 style="color:#fff;font-size:28px">Claude AI - Bộ Tạo Đề Thi Tiếng Anh</h1>
+        <span id="trialBadge" style="background:#f59e0b; color:#fff; padding:6px 14px; border-radius:999px; font-size:13.5px; font-weight:bold; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1)"></span>
+    </div>
+    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate.</div>
+  </div>
+
+  <!-- Vùng nhập Key kích hoạt (Ẩn mặc định) -->
+  <div class="card" id="activationWrap" style="display:none; background:#fffbeb; border-color:#fde047; box-shadow:0 4px 15px rgba(234,179,8,0.15)">
+    <h3 style="margin-top:0; color:#b45309; display:flex; align-items:center; gap:8px;">🔒 Đã Hết Lượt Dùng Thử</h3>
+    <p style="font-size:14.5px; color:#92400e; margin-bottom:16px;">Bạn đã sử dụng hết <b>10 lần</b> tạo đề miễn phí. Vui lòng nhập Key kích hoạt bản quyền (gồm đúng 12 ký tự) để sử dụng vĩnh viễn.</p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap">
+      <input type="text" id="inpLicenseKey" placeholder="Nhập Key 12 ký tự..." maxlength="12" style="flex:1; min-width:200px; text-transform:uppercase; font-weight:bold; letter-spacing:1px; border-color:#fde047">
+      <button class="btn" style="background:#ca8a04; color:#fff; border:none" onclick="activateKey()">Kích Hoạt Ngay</button>
+    </div>
   </div>
 
   <div class="card">
@@ -88,13 +100,74 @@ textarea{resize:vertical;min-height:200px}
 </div>
 
 <script>
-// Tự động tải API Key đã lưu
+// ==========================================
+// HỆ THỐNG KIỂM SOÁT BẢN QUYỀN (10 LẦN DÙNG THỬ)
+// ==========================================
+const MAX_TRIALS = 10;
+const VALID_KEY = "PHAMTIEN2026"; // Mã key vĩnh viễn (Đúng 12 ký tự)
+
+function checkLicenseStatus() {
+    const isActivated = localStorage.getItem('claude_exam_activated') === 'true';
+    const trialCount = parseInt(localStorage.getItem('claude_exam_trials') || '0');
+
+    const badge = document.getElementById('trialBadge');
+    const actWrap = document.getElementById('activationWrap');
+    const btnGen = document.getElementById('btnGenerate');
+
+    if (isActivated) {
+        badge.style.display = 'inline-block';
+        badge.style.background = '#16a34a';
+        badge.textContent = '✓ Bản Quyền Vĩnh Viễn';
+        actWrap.style.display = 'none';
+        btnGen.disabled = false;
+        btnGen.innerHTML = "🚀 BẮT ĐẦU BIÊN SOẠN ĐỀ MỚI";
+    } else {
+        const remaining = MAX_TRIALS - trialCount;
+        badge.style.display = 'inline-block';
+        
+        if (remaining > 0) {
+            badge.textContent = `Dùng thử: ${remaining}/${MAX_TRIALS} lần`;
+            actWrap.style.display = 'none';
+            btnGen.disabled = false;
+        } else {
+            badge.style.background = '#dc2626';
+            badge.textContent = `Đã hết lượt dùng thử`;
+            actWrap.style.display = 'block';
+            btnGen.disabled = true;
+            btnGen.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT BẢN QUYỀN ĐỂ TIẾP TỤC";
+        }
+    }
+}
+
+function activateKey() {
+    const inputKey = document.getElementById('inpLicenseKey').value.trim().toUpperCase();
+    
+    if (inputKey.length !== 12) {
+        alert("Lỗi: Key kích hoạt phải bao gồm ĐÚNG 12 ký tự. Vui lòng kiểm tra lại!");
+        return;
+    }
+
+    if (inputKey === VALID_KEY) {
+        localStorage.setItem('claude_exam_activated', 'true');
+        alert("🎉 Chúc mừng! Kích hoạt bản quyền vĩnh viễn thành công.");
+        checkLicenseStatus();
+    } else {
+        alert("❌ Key kích hoạt không chính xác!");
+    }
+}
+
+// ==========================================
+// KHỞI TẠO DỮ LIỆU KHI TẢI TRANG
+// ==========================================
 window.onload = () => {
+    checkLicenseStatus();
     const savedKey = localStorage.getItem('claude_api_key');
     if(savedKey) document.getElementById('inpApiKey').value = savedKey;
 };
 
-// Đọc nội dung file DOCX hoặc TXT
+// ==========================================
+// XỬ LÝ ĐỌC FILE (DOCX, TXT)
+// ==========================================
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -122,7 +195,7 @@ function handleFileSelect(event) {
     } else {
         showStatus("Chỉ hỗ trợ file .txt hoặc .docx", "error");
     }
-    event.target.value = ''; // Reset input
+    event.target.value = ''; 
 }
 
 function showStatus(msg, type) {
@@ -132,7 +205,9 @@ function showStatus(msg, type) {
     box.textContent = msg;
 }
 
-// SYSTEM PROMPT CỨNG (Chứa các quy tắc khắt khe của bạn)
+// ==========================================
+// SYSTEM PROMPT CỨNG
+// ==========================================
 const SYSTEM_PROMPT = `Bạn là một chuyên gia khảo thí và biên soạn đề thi Tiếng Anh cấp cao. 
 Nhiệm vụ của bạn là phân tích "ĐỀ MẪU" do người dùng cung cấp và biên soạn ra một "ĐỀ THI MỚI" tuân thủ NGHIÊM NGẶT 100% các quy tắc sau:
 
@@ -168,14 +243,24 @@ Cấu trúc phần này:
 - Bảng đáp án ngắn gọn (ví dụ: 1A, 2B, 3C...)
 - Giải thích chi tiết cho từng câu (Tại sao đúng, tại sao sai, dịch nghĩa nếu cần).`;
 
+// ==========================================
+// GỌI API SINH ĐỀ
+// ==========================================
 async function generateExam() {
+    const isActivated = localStorage.getItem('claude_exam_activated') === 'true';
+    let trialCount = parseInt(localStorage.getItem('claude_exam_trials') || '0');
+
+    if (!isActivated && trialCount >= MAX_TRIALS) {
+        checkLicenseStatus();
+        return;
+    }
+
     const apiKey = document.getElementById('inpApiKey').value.trim();
     const inputText = document.getElementById('inpText').value.trim();
     
     if(!apiKey) return alert("Vui lòng nhập API Key của Claude!");
     if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên!");
 
-    // Lưu API Key
     localStorage.setItem('claude_api_key', apiKey);
 
     const btn = document.getElementById('btnGenerate');
@@ -185,7 +270,6 @@ async function generateExam() {
     showStatus("Hệ thống đang phân tích đề mẫu và sinh đề mới. Vui lòng không đóng trình duyệt...", "loading");
 
     try {
-        // Sử dụng CorsProxy.io để vượt qua lỗi CORS khi gọi API trực tiếp từ giao diện Web tĩnh
         const targetUrl = 'https://api.anthropic.com/v1/messages';
         const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
 
@@ -199,8 +283,8 @@ async function generateExam() {
             },
             body: JSON.stringify({
                 model: 'claude-3-5-sonnet-20241022',
-                max_tokens: 8192, // Output tối đa để tránh bị cắt cụt đề thi
-                temperature: 0.4, // Nhiệt độ thấp để đảm bảo không bịa nguồn (Hallucinate)
+                max_tokens: 8192, 
+                temperature: 0.4, 
                 system: SYSTEM_PROMPT,
                 messages: [
                     { 
@@ -223,15 +307,25 @@ async function generateExam() {
         document.getElementById('outputWrap').style.display = 'block';
         showStatus("Hoàn tất! Đề thi mới đã được tạo thành công.", "success");
 
-        // Tự động cuộn xuống kết quả
+        // Ghi nhận lượt dùng thử nếu chưa kích hoạt
+        if (!isActivated) {
+            trialCount++;
+            localStorage.setItem('claude_exam_trials', trialCount.toString());
+            checkLicenseStatus();
+        }
+
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
 
     } catch (error) {
         console.error(error);
         showStatus("Lỗi: " + error.message, "error");
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = "🚀 BẮT ĐẦU BIÊN SOẠN ĐỀ MỚI";
+        if (localStorage.getItem('claude_exam_activated') !== 'true' && parseInt(localStorage.getItem('claude_exam_trials') || '0') >= MAX_TRIALS) {
+            btn.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT BẢN QUYỀN ĐỂ TIẾP TỤC";
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = "🚀 BẮT ĐẦU BIÊN SOẠN ĐỀ MỚI";
+        }
     }
 }
 
