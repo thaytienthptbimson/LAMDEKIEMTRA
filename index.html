@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Công Cụ Sinh Đề Thi Bằng AI (Claude & Gemini)</title>
+<!-- Thư viện đọc file Word -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+<!-- Thư viện xuất file Word (.docx) -->
+<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
 <style>
 :root{
   --bg:#f4f6fb;--card:#ffffff;--ink:#1e293b;--mut:#64748b;--line:#e2e8f0;
@@ -35,9 +38,7 @@ textarea{resize:vertical;min-height:200px}
 .status-loading{background:#fef08a;color:#854d0e;border:1px solid #fde047}
 .status-success{background:#dcfce7;color:#166534;border:1px solid #86efac}
 .status-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
-#outputWrap{display:none}
 .note{font-size:13px;color:var(--mut);background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--line);margin-top:8px}
-
 .divider { display: flex; align-items: center; text-align: center; margin: 30px 0; color: var(--mut); font-weight: 600; font-size: 13px; text-transform: uppercase; }
 .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
 .divider:not(:empty)::before { margin-right: 15px; }
@@ -56,7 +57,7 @@ textarea{resize:vertical;min-height:200px}
         <h1 style="color:#fff;font-size:28px">AI Exam Generator (Claude & Gemini)</h1>
         <button class="btn sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.4);" onclick="resetAllTrials()">🔄 Reset tất cả lượt dùng thử</button>
     </div>
-    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (Bịa nguồn).</div>
+    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (Bịa nguồn) và hỗ trợ xuất file Word chuẩn form.</div>
   </div>
 
   <div class="card">
@@ -131,15 +132,23 @@ textarea{resize:vertical;min-height:200px}
 
   <div id="statusBox"></div>
 
+  <!-- VÙNG KẾT QUẢ VÀ XUẤT FILE ĐỀ THI -->
   <div class="card" id="outputWrap">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="margin:0;color:var(--ok)">✅ Đề thi đã được tạo thành công!</h2>
-      <div style="display:flex;gap:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <h2 style="margin:0;color:var(--ok);font-size:20px;">✅ Kết Quả & Xuất File</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-outline sm" onclick="copyResult()">📋 Copy Tất Cả</button>
         <button class="btn primary sm" onclick="downloadResult()">💾 Tải File Text</button>
+        <button class="btn sm" style="background:#2563eb;color:#fff;border:none" onclick="downloadDocx()">📄 Tải File Word (.docx)</button>
       </div>
     </div>
-    <textarea id="outText" style="min-height:500px;font-family:'Times New Roman',serif;font-size:16px" readonly></textarea>
+    
+    <div style="font-size:13.5px;color:var(--mut);margin-bottom:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px dashed var(--line)">
+        <i>* Nếu dùng <b>Cách 1</b> hoặc <b>Cách 3</b>: Bạn hãy dán kết quả từ Claude/Gemini vào ô dưới đây rồi bấm "Tải File Word (.docx)".<br>
+        * Nếu dùng <b>Cách 2</b> hoặc <b>Cách 4</b>: Kết quả sẽ tự động hiện ra ở đây.</i>
+    </div>
+    
+    <textarea id="outText" placeholder="Kết quả tạo đề sẽ hiện ở đây, hoặc bạn dán kết quả thủ công vào đây..." style="min-height:500px;font-family:'Times New Roman',serif;font-size:16px"></textarea>
   </div>
 </div>
 
@@ -171,12 +180,12 @@ Tuyệt đối chỉ in ra nội dung đề thi trong phần này. KHÔNG kèm t
 - Tuân thủ chính xác các dạng câu hỏi của bài đọc mẫu.
 
 4. ĐỊNH DẠNG CÂU HỎI VÀ ĐOẠN VĂN ĐỌC HIỂU:
-- Bắt buộc in đậm (Bold) trực tiếp vào đoạn văn đọc hiểu đối với:
+- Bắt buộc dùng Markdown in đậm (ví dụ: **word**) trực tiếp vào đoạn văn đọc hiểu đối với:
   + Từ vựng được hỏi đồng nghĩa/trái nghĩa.
   + Đại từ tham chiếu được hỏi.
   + Các từ, cụm từ được hỏi nằm trong câu hỏi.
   + Toàn bộ câu/mệnh đề được hỏi ý chính/paraphrase.
-- TRONG NỘI DUNG CÂU HỎI: Phải bôi đen (in đậm) từ/cụm từ được trích dẫn để hỏi. Ví dụ: The word "**XYZ**" in paragraph 1 is closest in meaning to...
+- TRONG NỘI DUNG CÂU HỎI: Phải dùng Markdown in đậm (**word**) cho từ/cụm từ được trích dẫn để hỏi. Ví dụ: The word "**XYZ**" in paragraph 1 is closest in meaning to...
 - Định dạng 4 phương án cho câu đọc hiểu: Phải có độ dài tương đương nhau (chênh lệch tối đa 3-4 từ), viết thành câu hoàn chỉnh nếu hỏi về nội dung.
 
 ---
@@ -229,7 +238,7 @@ function checkLicenseStatus() {
 function resetAllTrials() {
     if(confirm("Bạn có chắc chắn muốn làm mới (Reset) lại toàn bộ lượt dùng thử?")) {
         localStorage.setItem('ai_free_trials', '0');
-        localStorage.removeItem('ai_free_activated'); // Xóa luôn trạng thái đăng nhập
+        localStorage.removeItem('ai_free_activated'); 
         checkLicenseStatus();
         alert("🔄 Đã làm mới số lượt dùng thử về 0 thành công!");
     }
@@ -249,6 +258,9 @@ function unlockFreeMode() {
 
 window.onload = () => {
     checkLicenseStatus();
+    // Luôn hiện Output Wrap để người dùng có thể dán nội dung bất cứ lúc nào
+    document.getElementById('outputWrap').style.display = 'block';
+    
     const savedC = localStorage.getItem('claude_api_key');
     const savedG = localStorage.getItem('gemini_api_key');
     if(savedC) document.getElementById('inpClaudeKey').value = savedC;
@@ -344,7 +356,6 @@ async function generateAPI(aiType) {
     const btnClaude = document.getElementById('btnGenClaudeAPI');
     const btnGemini = document.getElementById('btnGenGeminiAPI');
 
-    document.getElementById('outputWrap').style.display = 'none';
     showStatus("Đang phân tích đề mẫu và sinh đề mới qua API. Vui lòng không đóng trình duyệt...", "loading");
 
     try {
@@ -415,7 +426,6 @@ async function generateAPI(aiType) {
             document.getElementById('outText').value = data.candidates[0].content.parts[0].text;
         }
 
-        document.getElementById('outputWrap').style.display = 'block';
         showStatus("Hoàn tất! Đề thi tự động đã được tạo thành công.", "success");
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
 
@@ -430,8 +440,12 @@ async function generateAPI(aiType) {
     }
 }
 
+// ==========================================
+// XUẤT FILE VÀ COPY
+// ==========================================
 function copyResult() {
     const text = document.getElementById('outText');
+    if (!text.value.trim()) return alert('Chưa có nội dung đề thi!');
     text.select();
     document.execCommand('copy');
     alert('Đã copy toàn bộ nội dung đề thi vào bộ nhớ tạm!');
@@ -439,6 +453,7 @@ function copyResult() {
 
 function downloadResult() {
     const text = document.getElementById('outText').value;
+    if (!text.trim()) return alert('Chưa có nội dung đề thi!');
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -448,6 +463,49 @@ function downloadResult() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+// Hàm xuất file Word DOCX sử dụng thư viện docx.js (Hỗ trợ in đậm Markdown)
+function downloadDocx() {
+    if (!window.docx) {
+        alert("Thư viện xuất file Word chưa tải xong. Vui lòng kiểm tra kết nối mạng!");
+        return;
+    }
+    
+    const text = document.getElementById('outText').value;
+    if (!text.trim()) { 
+        alert("Vui lòng có nội dung trong ô kết quả trước khi tải file Word!"); 
+        return; 
+    }
+
+    const lines = text.split('\n');
+    const paragraphs = lines.map(line => {
+        // Tách chuỗi theo định dạng markdown **in đậm**
+        const parts = line.split(/(\*\*.*?\*\*)/g);
+        const textRuns = parts.map(part => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+                // Xóa bỏ dấu ** và cấu hình in đậm
+                return new docx.TextRun({ text: part.slice(2, -2), bold: true, font: "Times New Roman", size: 28 }); // size 28 = 14pt
+            }
+            return new docx.TextRun({ text: part, font: "Times New Roman", size: 28 });
+        });
+        return new docx.Paragraph({ children: textRuns });
+    });
+
+    const doc = new docx.Document({
+        sections: [{ properties: {}, children: paragraphs }]
+    });
+
+    docx.Packer.toBlob(doc).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `De_Thi_AI_${new Date().getTime()}.docx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    });
 }
 </script>
 </body>
