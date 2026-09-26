@@ -258,7 +258,6 @@ function unlockFreeMode() {
 
 window.onload = () => {
     checkLicenseStatus();
-    // Luôn hiện Output Wrap để người dùng có thể dán nội dung bất cứ lúc nào
     document.getElementById('outputWrap').style.display = 'block';
     
     const savedC = localStorage.getItem('claude_api_key');
@@ -405,7 +404,8 @@ async function generateAPI(aiType) {
             btnGemini.disabled = true;
             btnGemini.innerHTML = "⏳ Đang xử lý...";
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+            // SỬA LỖI MODEL GEMINI API Ở ĐÂY
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
             
             const response = await fetch(url, {
                 method: 'POST',
