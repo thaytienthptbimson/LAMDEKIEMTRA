@@ -80,9 +80,22 @@ textarea{resize:vertical;min-height:200px}
 
     <!-- CÁCH 1: DÙNG MIỄN PHÍ TRÊN CLAUDE.AI -->
     <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:24px; margin-bottom:24px;">
-        <h3 style="margin-top:0; color:#166534; margin-bottom:8px;">Cách 1: Dùng tài khoản Claude.ai Miễn Phí (Thủ công)</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:10px;">
+            <h3 style="margin:0; color:#166534;">Cách 1: Dùng tài khoản Claude.ai Miễn Phí</h3>
+            <span id="freeTrialBadge" style="background:#f59e0b; color:#fff; padding:4px 12px; border-radius:999px; font-size:12.5px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.05)"></span>
+        </div>
         <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ gộp Đề Mẫu của bạn với các Quy tắc khắt khe thành một Lệnh chuẩn. Bạn chỉ cần copy và dán vào tài khoản Gmail Claude.ai của mình.</p>
-        <button class="btn" style="width:100%; background:#16a34a; border-color:#16a34a; font-size:15.5px" onclick="generateFreePrompt()">
+        
+        <!-- Vùng nhập Mật khẩu cho Cách 1 (Ẩn mặc định) -->
+        <div id="freeUnlockWrap" style="display:none; margin-bottom:16px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px;">
+            <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hết 1 lượt thử. Vui lòng đăng nhập mật khẩu để dùng tiếp:</label>
+            <div style="display:flex; gap:10px; flex-wrap:wrap">
+                <input type="password" id="inpFreePassword" placeholder="Mật khẩu..." style="flex:1; border-color:#fde047;">
+                <button class="btn" style="background:#ca8a04; color:#fff; border:none;" onclick="unlockFreeMode()">Đăng Nhập</button>
+            </div>
+        </div>
+
+        <button class="btn" id="btnGenerateFree" style="width:100%; background:#16a34a; border-color:#16a34a; font-size:15.5px" onclick="generateFreePrompt()">
             📋 TẠO VÀ COPY LỆNH ĐỂ DÁN VÀO CLAUDE.AI
         </button>
     </div>
@@ -115,8 +128,14 @@ textarea{resize:vertical;min-height:200px}
 </div>
 
 <script>
-const MAX_TRIALS = 10;
-const VALID_KEY = "PHAMTIEN2026"; 
+// ==========================================
+// CẤU HÌNH BẢN QUYỀN VÀ DÙNG THỬ
+// ==========================================
+const MAX_API_TRIALS = 10;
+const VALID_API_KEY = "PHAMTIEN2026"; 
+
+const MAX_FREE_TRIALS = 1;
+const VALID_FREE_PASSWORD = "phamtien17081983@";
 
 const SYSTEM_PROMPT = `Bạn là một chuyên gia khảo thí và biên soạn đề thi Tiếng Anh cấp cao. 
 Nhiệm vụ của bạn là phân tích "ĐỀ MẪU" do người dùng cung cấp và biên soạn ra một "ĐỀ THI MỚI" tuân thủ NGHIÊM NGẶT 100% các quy tắc sau:
@@ -129,7 +148,7 @@ Tuyệt đối chỉ in ra nội dung đề thi trong phần này. KHÔNG kèm t
 - Phân bổ đáp án: Dàn đều phương án đúng (A, B, C, D mỗi loại chiếm khoảng 25%).
 
 2. ĐỊNH DẠNG PHƯƠNG ÁN TRẢ LỜI:
-- Phương án ngắn (1-2 từ): Nằm trên cùng 1 hàng, cách nhau bằng Tab đều đặn. (A. __ \\t B. __ \\t C. __ \\t D. __)
+- Phương án ngắn (1-2 từ): Nằm trên cùng 1 hàng, cách nhau bằng Tab đều đặn. (A. __ \t B. __ \t C. __ \t D. __)
 - Phương án trung bình/dài: Sắp xếp thành 2 hàng (2 phương án/hàng) cách nhau đều đặn.
 
 3. RÀNG BUỘC BÀI ĐỌC (KHÔNG TỰ BỊA / NO HALLUCINATE):
@@ -153,52 +172,98 @@ Cấu trúc phần này:
 - Bảng đáp án ngắn gọn (ví dụ: 1A, 2B, 3C...)
 - Giải thích chi tiết cho từng câu (Tại sao đúng, tại sao sai, dịch nghĩa nếu cần).`;
 
-
+// ==========================================
+// KIỂM TRA TRẠNG THÁI BẢN QUYỀN
+// ==========================================
 function checkLicenseStatus() {
-    const isActivated = localStorage.getItem('claude_exam_activated') === 'true';
-    const trialCount = parseInt(localStorage.getItem('claude_exam_trials') || '0');
+    // 1. Kiểm tra Bản quyền API (Cách 2)
+    const isApiActivated = localStorage.getItem('claude_exam_activated') === 'true';
+    const apiTrialCount = parseInt(localStorage.getItem('claude_exam_trials') || '0');
 
-    const badge = document.getElementById('trialBadge');
-    const actWrap = document.getElementById('activationWrap');
-    const btnGen = document.getElementById('btnGenerate');
+    const badgeApi = document.getElementById('trialBadge');
+    const actWrapApi = document.getElementById('activationWrap');
+    const btnGenApi = document.getElementById('btnGenerate');
 
-    if (isActivated) {
-        badge.style.display = 'inline-block';
-        badge.style.background = '#16a34a';
-        badge.textContent = '✓ Bản Quyền API Vĩnh Viễn';
-        actWrap.style.display = 'none';
-        btnGen.disabled = false;
-        btnGen.innerHTML = "🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API";
+    if (isApiActivated) {
+        badgeApi.style.display = 'inline-block';
+        badgeApi.style.background = '#16a34a';
+        badgeApi.textContent = '✓ Bản Quyền API Vĩnh Viễn';
+        actWrapApi.style.display = 'none';
+        btnGenApi.disabled = false;
+        btnGenApi.innerHTML = "🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API";
     } else {
-        const remaining = MAX_TRIALS - trialCount;
-        badge.style.display = 'inline-block';
+        const remainingApi = MAX_API_TRIALS - apiTrialCount;
+        badgeApi.style.display = 'inline-block';
         
-        if (remaining > 0) {
-            badge.textContent = `API Dùng thử: ${remaining}/${MAX_TRIALS} lần`;
-            actWrap.style.display = 'none';
-            btnGen.disabled = false;
+        if (remainingApi > 0) {
+            badgeApi.textContent = `API Dùng thử: ${remainingApi}/${MAX_API_TRIALS} lần`;
+            actWrapApi.style.display = 'none';
+            btnGenApi.disabled = false;
         } else {
-            badge.style.background = '#dc2626';
-            badge.textContent = `Đã hết lượt API tự động`;
-            actWrap.style.display = 'block';
-            btnGen.disabled = true;
-            btnGen.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT ĐỂ DÙNG API TỰ ĐỘNG";
+            badgeApi.style.background = '#dc2626';
+            badgeApi.textContent = `Đã hết lượt API tự động`;
+            actWrapApi.style.display = 'block';
+            btnGenApi.disabled = true;
+            btnGenApi.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT ĐỂ DÙNG API TỰ ĐỘNG";
+        }
+    }
+
+    // 2. Kiểm tra Bản quyền Cách 1 (Copy Prompt Miễn Phí)
+    const isFreeActivated = localStorage.getItem('claude_free_activated') === 'true';
+    const freeTrialCount = parseInt(localStorage.getItem('claude_free_trials') || '0');
+    
+    const badgeFree = document.getElementById('freeTrialBadge');
+    const unlockWrapFree = document.getElementById('freeUnlockWrap');
+    const btnGenFree = document.getElementById('btnGenerateFree');
+
+    if (isFreeActivated) {
+        badgeFree.style.background = '#16a34a';
+        badgeFree.textContent = '✓ Đã mở khóa đăng nhập';
+        unlockWrapFree.style.display = 'none';
+        btnGenFree.disabled = false;
+        btnGenFree.innerHTML = "📋 TẠO VÀ COPY LỆNH ĐỂ DÁN VÀO CLAUDE.AI";
+    } else {
+        const remainingFree = MAX_FREE_TRIALS - freeTrialCount;
+        if (remainingFree > 0) {
+            badgeFree.style.background = '#f59e0b';
+            badgeFree.textContent = `Dùng thử: ${remainingFree}/${MAX_FREE_TRIALS} lần`;
+            unlockWrapFree.style.display = 'none';
+            btnGenFree.disabled = false;
+        } else {
+            badgeFree.style.background = '#dc2626';
+            badgeFree.textContent = `Đã hết lượt dùng thử`;
+            unlockWrapFree.style.display = 'block';
+            btnGenFree.disabled = true;
+            btnGenFree.innerHTML = "🔒 ĐÃ KHÓA (YÊU CẦU ĐĂNG NHẬP BÊN TRÊN)";
         }
     }
 }
 
+// Hàm kích hoạt API
 function activateKey() {
     const inputKey = document.getElementById('inpLicenseKey').value.trim().toUpperCase();
     if (inputKey.length !== 12) {
         alert("Lỗi: Key kích hoạt phải bao gồm ĐÚNG 12 ký tự. Vui lòng kiểm tra lại!");
         return;
     }
-    if (inputKey === VALID_KEY) {
+    if (inputKey === VALID_API_KEY) {
         localStorage.setItem('claude_exam_activated', 'true');
         alert("🎉 Chúc mừng! Kích hoạt bản quyền API vĩnh viễn thành công.");
         checkLicenseStatus();
     } else {
         alert("❌ Key kích hoạt không chính xác!");
+    }
+}
+
+// Hàm kích hoạt tính năng Free (Cách 1)
+function unlockFreeMode() {
+    const pwd = document.getElementById('inpFreePassword').value;
+    if (pwd === VALID_FREE_PASSWORD) {
+        localStorage.setItem('claude_free_activated', 'true');
+        alert("🎉 Đăng nhập thành công! Đã mở khóa tính năng Tạo Lệnh Miễn Phí vĩnh viễn.");
+        checkLicenseStatus();
+    } else {
+        alert("❌ Mật khẩu không chính xác!");
     }
 }
 
@@ -208,6 +273,9 @@ window.onload = () => {
     if(savedKey) document.getElementById('inpApiKey').value = savedKey;
 };
 
+// ==========================================
+// XỬ LÝ CHỨC NĂNG
+// ==========================================
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -247,6 +315,14 @@ function showStatus(msg, type) {
 
 // Hàm sinh Prompt Miễn Phí (Dành cho web Claude.ai)
 function generateFreePrompt() {
+    const isActivated = localStorage.getItem('claude_free_activated') === 'true';
+    let trialCount = parseInt(localStorage.getItem('claude_free_trials') || '0');
+
+    if (!isActivated && trialCount >= MAX_FREE_TRIALS) {
+        checkLicenseStatus();
+        return;
+    }
+
     const inputText = document.getElementById('inpText').value.trim();
     if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên trước!");
 
@@ -261,6 +337,14 @@ function generateFreePrompt() {
     document.body.removeChild(tempTextArea);
 
     alert("🎉 THÀNH CÔNG! Đã copy Lệnh tạo đề thi vào bộ nhớ tạm.\n\nBây giờ hãy mở một Tab mới, truy cập trang claude.ai (đăng nhập bằng Gmail miễn phí) và DÁN lệnh này vào ô chat nhé!");
+    
+    // Lưu lượt dùng nếu chưa kích hoạt
+    if (!isActivated) {
+        trialCount++;
+        localStorage.setItem('claude_free_trials', trialCount.toString());
+        checkLicenseStatus();
+    }
+
     window.open("https://claude.ai", "_blank");
 }
 
@@ -269,7 +353,7 @@ async function generateExamAPI() {
     const isActivated = localStorage.getItem('claude_exam_activated') === 'true';
     let trialCount = parseInt(localStorage.getItem('claude_exam_trials') || '0');
 
-    if (!isActivated && trialCount >= MAX_TRIALS) {
+    if (!isActivated && trialCount >= MAX_API_TRIALS) {
         checkLicenseStatus();
         return;
     }
@@ -284,7 +368,7 @@ async function generateExamAPI() {
 
     const btn = document.getElementById('btnGenerate');
     btn.disabled = true;
-    btn.innerHTML = "⏳ Đang kết nối tới API Claude... Vui lòng đợi";
+    btn.innerHTML = "⏳ Đang kết nối tới API Claude... Vui lòng đợi (có thể mất 1-2 phút)";
     document.getElementById('outputWrap').style.display = 'none';
     showStatus("Hệ thống đang phân tích đề mẫu và sinh đề mới qua API. Vui lòng không đóng trình duyệt...", "loading");
 
@@ -338,7 +422,7 @@ async function generateExamAPI() {
         console.error(error);
         showStatus("Lỗi: " + error.message, "error");
     } finally {
-        if (localStorage.getItem('claude_exam_activated') !== 'true' && parseInt(localStorage.getItem('claude_exam_trials') || '0') >= MAX_TRIALS) {
+        if (localStorage.getItem('claude_exam_activated') !== 'true' && parseInt(localStorage.getItem('claude_exam_trials') || '0') >= MAX_API_TRIALS) {
             btn.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT BẢN QUYỀN ĐỂ DÙNG API TỰ ĐỘNG";
         } else {
             btn.disabled = false;
