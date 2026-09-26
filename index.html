@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Công Cụ Sinh Đề Thi Bằng Claude AI</title>
+<!-- Tải thư viện Mammoth.js để đọc file Word (.docx) trực tiếp trên trình duyệt -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+<style>
+:root{
+  --bg:#f4f6fb;--card:#ffffff;--ink:#1e293b;--mut:#64748b;--line:#e2e8f0;
+  --brand:#8b5cf6;--brand-dark:#7c3aed;--soft:#f5f3ff;--ok:#16a34a;--bad:#dc2626;
+  --fs:15px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:var(--fs);line-height:1.6}
+.container{max-width:1000px;margin:30px auto;padding:0 20px}
+.card{background:var(--card);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.05);padding:32px;margin-bottom:24px;border:1px solid var(--line)}
+h1{margin:0 0 8px;font-size:24px;color:var(--brand-dark)}
+.desc{color:var(--mut);margin-bottom:24px;font-size:14.5px}
+.form-group{margin-bottom:20px}
+label{display:block;font-weight:600;margin-bottom:8px;font-size:14px}
+input[type=text],input[type=password],textarea{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:inherit;transition:.2s}
+input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(139,92,246,.15)}
+textarea{resize:vertical;min-height:200px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:.2s;font-size:15px}
+.btn:hover{background:var(--brand-dark)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-outline{background:#fff;color:var(--brand);border:1.5px solid var(--brand)}
+.btn-outline:hover{background:var(--soft)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.file-drop{border:2px dashed var(--brand);background:var(--soft);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:.2s}
+.file-drop:hover{background:#ede9fe}
+.file-drop input{display:none}
+#statusBox{display:none;padding:16px;border-radius:10px;margin-bottom:20px;font-weight:600;text-align:center}
+.status-loading{background:#fef08a;color:#854d0e;border:1px solid #fde047}
+.status-success{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.status-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+#outputWrap{display:none}
+.note{font-size:13px;color:var(--mut);background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--line);margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card" style="background:linear-gradient(135deg, #7c3aed, #4f46e5); color:#fff; padding:40px 32px">
+    <h1 style="color:#fff;font-size:28px">Claude AI - Bộ Tạo Đề Thi Tiếng Anh</h1>
+    <div style="opacity:0.9;font-size:15px">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (bịa nguồn).</div>
+  </div>
+
+  <div class="card">
+    <div class="form-group">
+      <label>1. Cấu hình API Key của Claude (Anthropic)</label>
+      <input type="password" id="inpApiKey" placeholder="sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+      <div class="note">Nhận API Key miễn phí hoặc trả phí tại: <a href="https://console.anthropic.com/" target="_blank" style="color:var(--brand)">console.anthropic.com</a>. Hệ thống lưu Key cục bộ trên trình duyệt của bạn.</div>
+    </div>
+
+    <div class="form-group">
+      <label>2. Cung cấp Đề Thi Mẫu</label>
+      <div class="grid-2">
+        <label class="file-drop" id="dropZone">
+          <div style="font-size:24px;margin-bottom:8px">📁</div>
+          <div>Bấm để chọn file <b>.docx</b> hoặc <b>.txt</b></div>
+          <input type="file" id="inpFile" accept=".docx,.txt" onchange="handleFileSelect(event)">
+        </label>
+        <div style="display:flex;align-items:center;justify-content:center;color:var(--mut);font-weight:600">HOẶC DÁN VĂN BẢN XUỐNG DƯỚI</div>
+      </div>
+      <textarea id="inpText" placeholder="Dán nội dung đề mẫu vào đây..." style="margin-top:16px"></textarea>
+    </div>
+
+    <button class="btn" id="btnGenerate" style="width:100%;font-size:16px;padding:16px" onclick="generateExam()">
+      🚀 BẮT ĐẦU BIÊN SOẠN ĐỀ MỚI
+    </button>
+  </div>
+
+  <div id="statusBox"></div>
+
+  <div class="card" id="outputWrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="margin:0;color:var(--ok)">✅ Đề thi đã được tạo thành công!</h2>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline sm" onclick="copyResult()">📋 Copy Tất Cả</button>
+        <button class="btn primary sm" onclick="downloadResult()">💾 Tải File Text</button>
+      </div>
+    </div>
+    <textarea id="outText" style="min-height:500px;font-family:'Times New Roman',serif;font-size:16px" readonly></textarea>
+  </div>
+</div>
+
+<script>
+// Tự động tải API Key đã lưu
+window.onload = () => {
+    const savedKey = localStorage.getItem('claude_api_key');
+    if(savedKey) document.getElementById('inpApiKey').value = savedKey;
+};
+
+// Đọc nội dung file DOCX hoặc TXT
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const ext = file.name.split('.').pop().toLowerCase();
+    
+    if (ext === 'txt') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('inpText').value = e.target.result;
+            showStatus("Đã tải xong file .txt", "success");
+        };
+        reader.readAsText(file);
+    } else if (ext === 'docx') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            mammoth.extractRawText({arrayBuffer: e.target.result})
+                .then(result => {
+                    document.getElementById('inpText').value = result.value;
+                    showStatus("Đã trích xuất văn bản từ file Word thành công!", "success");
+                })
+                .catch(err => showStatus("Lỗi đọc file DOCX: " + err.message, "error"));
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        showStatus("Chỉ hỗ trợ file .txt hoặc .docx", "error");
+    }
+    event.target.value = ''; // Reset input
+}
+
+function showStatus(msg, type) {
+    const box = document.getElementById('statusBox');
+    box.style.display = 'block';
+    box.className = `status-${type}`;
+    box.textContent = msg;
+}
+
+// SYSTEM PROMPT CỨNG (Chứa các quy tắc khắt khe của bạn)
+const SYSTEM_PROMPT = `Bạn là một chuyên gia khảo thí và biên soạn đề thi Tiếng Anh cấp cao. 
+Nhiệm vụ của bạn là phân tích "ĐỀ MẪU" do người dùng cung cấp và biên soạn ra một "ĐỀ THI MỚI" tuân thủ NGHIÊM NGẶT 100% các quy tắc sau:
+
+[PHẦN I: ĐỀ THI TRẮC NGHIỆM]
+Tuyệt đối chỉ in ra nội dung đề thi trong phần này. KHÔNG kèm theo đáp án, KHÔNG giải thích sau câu hỏi.
+1. CẤU TRÚC VÀ MỨC ĐỘ:
+- Tương đương độ khó, độ dài và số lượng từ của từng bài trong đề mẫu.
+- Khác hoàn toàn về nội dung, nhưng giữ nguyên thứ tự các phần/cấu trúc.
+- Phân bổ đáp án: Dàn đều phương án đúng (A, B, C, D mỗi loại chiếm khoảng 25%).
+
+2. ĐỊNH DẠNG PHƯƠNG ÁN TRẢ LỜI:
+- Phương án ngắn (1-2 từ): Nằm trên cùng 1 hàng, cách nhau bằng Tab đều đặn. (A. __ \\t B. __ \\t C. __ \\t D. __)
+- Phương án trung bình/dài: Sắp xếp thành 2 hàng (2 phương án/hàng) cách nhau đều đặn.
+
+3. RÀNG BUỘC BÀI ĐỌC (KHÔNG TỰ BỊA / NO HALLUCINATE):
+- Bắt buộc lấy và điều chỉnh (adapted from) từ các nguồn tiếng Anh uy tín có thật (BBC, CNN, National Geographic, giáo trình...). Ưu tiên chủ đề sách giáo khoa.
+- Độ dài: Đọc điền từ (khoảng 100-150 từ/bài); Đọc hiểu (khoảng 300-400 từ/bài).
+- Trích dẫn: Ghi rõ nguồn trong ngoặc đơn nghiêng ngay sau khi kết thúc văn bản bài đọc. Ví dụ: (Adapted from [Nguồn])
+- Tuân thủ chính xác các dạng câu hỏi của bài đọc mẫu.
+
+4. ĐỊNH DẠNG CÂU HỎI ĐỌC HIỂU:
+- Bắt buộc in đậm (Bold) trực tiếp vào đoạn văn đọc hiểu đối với:
+  + Từ vựng được hỏi đồng nghĩa/trái nghĩa.
+  + Đại từ tham chiếu được hỏi.
+  + Các từ, cụm từ được hỏi nằm trong câu hỏi.
+  + Toàn bộ câu/mệnh đề được hỏi ý chính/paraphrase.
+- Định dạng 4 phương án cho câu đọc hiểu: Phải có độ dài tương đương nhau (chênh lệch tối đa 3-4 từ), viết thành câu hoàn chỉnh nếu hỏi về nội dung.
+
+---
+[PHẦN II: ĐÁP ÁN VÀ GIẢI THÍCH CHI TIẾT]
+Phần này phải được đặt tách biệt hoàn toàn ở cuối cùng, sau khi kết thúc toàn bộ Đề thi.
+Cấu trúc phần này:
+- Bảng đáp án ngắn gọn (ví dụ: 1A, 2B, 3C...)
+- Giải thích chi tiết cho từng câu (Tại sao đúng, tại sao sai, dịch nghĩa nếu cần).`;
+
+async function generateExam() {
+    const apiKey = document.getElementById('inpApiKey').value.trim();
+    const inputText = document.getElementById('inpText').value.trim();
+    
+    if(!apiKey) return alert("Vui lòng nhập API Key của Claude!");
+    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên!");
+
+    // Lưu API Key
+    localStorage.setItem('claude_api_key', apiKey);
+
+    const btn = document.getElementById('btnGenerate');
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Đang kết nối tới Claude AI... Vui lòng đợi (có thể mất 1-2 phút)";
+    document.getElementById('outputWrap').style.display = 'none';
+    showStatus("Hệ thống đang phân tích đề mẫu và sinh đề mới. Vui lòng không đóng trình duyệt...", "loading");
+
+    try {
+        // Sử dụng CorsProxy.io để vượt qua lỗi CORS khi gọi API trực tiếp từ giao diện Web tĩnh
+        const targetUrl = 'https://api.anthropic.com/v1/messages';
+        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+
+        const response = await fetch(proxyUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerously-allow-browser': 'true'
+            },
+            body: JSON.stringify({
+                model: 'claude-3-5-sonnet-20241022',
+                max_tokens: 8192, // Output tối đa để tránh bị cắt cụt đề thi
+                temperature: 0.4, // Nhiệt độ thấp để đảm bảo không bịa nguồn (Hallucinate)
+                system: SYSTEM_PROMPT,
+                messages: [
+                    { 
+                        role: 'user', 
+                        content: `Dưới đây là ĐỀ MẪU. Hãy dựa vào đây để biên soạn đề thi mới theo đúng các quy tắc đã được giao:\n\n<sample_exam>\n${inputText}\n</sample_exam>` 
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error?.message || `Lỗi HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const generatedText = data.content[0].text;
+
+        document.getElementById('outText').value = generatedText;
+        document.getElementById('outputWrap').style.display = 'block';
+        showStatus("Hoàn tất! Đề thi mới đã được tạo thành công.", "success");
+
+        // Tự động cuộn xuống kết quả
+        document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
+
+    } catch (error) {
+        console.error(error);
+        showStatus("Lỗi: " + error.message, "error");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = "🚀 BẮT ĐẦU BIÊN SOẠN ĐỀ MỚI";
+    }
+}
+
+function copyResult() {
+    const text = document.getElementById('outText');
+    text.select();
+    document.execCommand('copy');
+    alert('Đã copy toàn bộ nội dung đề thi vào bộ nhớ tạm!');
+}
+
+function downloadResult() {
+    const text = document.getElementById('outText').value;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `De_Thi_Claude_${new Date().getTime()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
