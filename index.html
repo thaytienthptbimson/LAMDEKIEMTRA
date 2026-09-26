@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Công Cụ Sinh Đề Thi Bằng Claude AI</title>
+<title>Công Cụ Sinh Đề Thi Bằng AI (Claude & Gemini)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
 <style>
 :root{
   --bg:#f4f6fb;--card:#ffffff;--ink:#1e293b;--mut:#64748b;--line:#e2e8f0;
   --brand:#8b5cf6;--brand-dark:#7c3aed;--soft:#f5f3ff;--ok:#16a34a;--bad:#dc2626;
+  --gemini:#0ea5e9; --gemini-dark:#0284c7;
   --fs:15px;
 }
 *{box-sizing:border-box}
@@ -16,7 +17,6 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,sans-serif;ba
 .container{max-width:1000px;margin:30px auto;padding:0 20px}
 .card{background:var(--card);border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.05);padding:32px;margin-bottom:24px;border:1px solid var(--line)}
 h1{margin:0 0 8px;font-size:24px;color:var(--brand-dark)}
-.desc{color:var(--mut);margin-bottom:24px;font-size:14.5px}
 .form-group{margin-bottom:20px}
 label{display:block;font-weight:600;margin-bottom:8px;font-size:14px}
 input[type=text],input[type=password],textarea{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:inherit;transition:.2s}
@@ -42,16 +42,21 @@ textarea{resize:vertical;min-height:200px}
 .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
 .divider:not(:empty)::before { margin-right: 15px; }
 .divider:not(:empty)::after { margin-left: 15px; }
+
+@media (max-width: 768px) {
+    .grid-2 { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
 
 <div class="container">
-  <div class="card" style="background:linear-gradient(135deg, #7c3aed, #4f46e5); color:#fff; padding:40px 32px">
+  <div class="card" style="background:linear-gradient(135deg, #7c3aed, #0284c7); color:#fff; padding:40px 32px">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
-        <h1 style="color:#fff;font-size:28px">Claude AI - Bộ Tạo Đề Thi Tiếng Anh</h1>
+        <h1 style="color:#fff;font-size:28px">AI Exam Generator (Claude & Gemini)</h1>
+        <button class="btn sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.4);" onclick="resetAllTrials()">🔄 Reset tất cả lượt dùng thử</button>
     </div>
-    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate. Hỗ trợ API tự động hoặc tạo Lệnh dùng miễn phí.</div>
+    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (Bịa nguồn).</div>
   </div>
 
   <div class="card">
@@ -63,23 +68,20 @@ textarea{resize:vertical;min-height:200px}
           <div>Bấm để chọn file <b>.docx</b> hoặc <b>.txt</b></div>
           <input type="file" id="inpFile" accept=".docx,.txt" onchange="handleFileSelect(event)">
         </label>
-        <div style="display:flex;align-items:center;justify-content:center;color:var(--mut);font-weight:600">HOẶC DÁN TRỰC TIẾP</div>
+        <div style="display:flex;align-items:center;justify-content:center;color:var(--mut);font-weight:600">HOẶC DÁN TRỰC TIẾP DƯỚI ĐÂY</div>
       </div>
       <textarea id="inpText" placeholder="Dán nội dung đề mẫu vào đây..." style="margin-top:16px"></textarea>
     </div>
 
-    <!-- CÁCH 1: DÙNG MIỄN PHÍ TRÊN CLAUDE.AI -->
+    <!-- TẠO LỆNH THỦ CÔNG (MIỄN PHÍ) -->
     <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:24px; margin-bottom:24px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:10px;">
-            <div style="display:flex; align-items:center; gap: 10px;">
-                <h3 style="margin:0; color:#166534;">Cách 1: Dùng tài khoản Claude.ai Miễn Phí</h3>
-                <button class="btn btn-outline sm" style="padding: 4px 10px; font-size: 12px; border-color: #166534; color: #166534;" onclick="resetFreeTrial()">🔄 Reset lượt</button>
-            </div>
+            <h3 style="margin:0; color:#166534;">Công cụ Miễn Phí (Tạo Lệnh Thủ Công)</h3>
             <span id="freeTrialBadge" style="background:#f59e0b; color:#fff; padding:4px 12px; border-radius:999px; font-size:12.5px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.05)"></span>
         </div>
-        <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ gộp Đề Mẫu của bạn với các Quy tắc khắt khe thành một Lệnh chuẩn. Bạn chỉ cần copy và dán vào tài khoản Gmail Claude.ai của mình.</p>
+        <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ gộp Đề Mẫu của bạn với các Quy tắc thành một Lệnh chuẩn. Bạn chỉ cần copy và dán vào AI bạn muốn sử dụng.</p>
         
-        <!-- Vùng nhập Mật khẩu cho Cách 1 (Ẩn mặc định) -->
+        <!-- Ô nhập Pass Mở khóa -->
         <div id="freeUnlockWrap" style="display:none; margin-bottom:16px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px;">
             <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hết lượt thử. Vui lòng đăng nhập mật khẩu để dùng tiếp:</label>
             <div style="display:flex; gap:10px; flex-wrap:wrap">
@@ -88,22 +90,43 @@ textarea{resize:vertical;min-height:200px}
             </div>
         </div>
 
-        <button class="btn" id="btnGenerateFree" style="width:100%; background:#16a34a; border-color:#16a34a; font-size:15.5px" onclick="generateFreePrompt()">
-            📋 TẠO VÀ COPY LỆNH ĐỂ DÁN VÀO CLAUDE.AI
-        </button>
+        <div class="grid-2">
+            <button class="btn" id="btnGenClaudeFree" style="background:#16a34a; border-color:#16a34a; font-size:14.5px" onclick="generateFreePrompt('claude')">
+                📋 CÁCH 1: LỆNH CHO CLAUDE
+            </button>
+            <button class="btn" id="btnGenGeminiFree" style="background:#059669; border-color:#059669; font-size:14.5px" onclick="generateFreePrompt('gemini')">
+                📋 CÁCH 3: LỆNH CHO GEMINI
+            </button>
+        </div>
     </div>
 
-    <div class="divider">Cách 2: Chạy Tự Động Trực Tiếp (Cần API Key Trả Phí)</div>
+    <div class="divider">Chạy Tự Động Bằng API (Yêu cầu API Key)</div>
 
-    <!-- CÁCH 2: DÙNG API TỰ ĐỘNG -->
-    <div class="form-group">
-      <label>Cấu hình API Key cá nhân (Không giới hạn lượt dùng)</label>
-      <input type="password" id="inpApiKey" placeholder="sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+    <!-- TẠO ĐỀ TỰ ĐỘNG BẰNG API -->
+    <div style="background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px;">
+        <h3 style="margin-top:0; color:var(--ink); margin-bottom:16px;">Công cụ Tự Động (Tài khoản API)</h3>
+        
+        <div class="grid-2">
+            <!-- CÁCH 2: CLAUDE API -->
+            <div style="background:#fff; border:1px solid var(--line); padding:16px; border-radius:10px;">
+                <label>🔑 API Key Claude (Anthropic)</label>
+                <input type="password" id="inpClaudeKey" placeholder="sk-ant-api03-..." style="margin-bottom:12px">
+                <button class="btn" id="btnGenClaudeAPI" style="width:100%; background:var(--brand); font-size:14px" onclick="generateAPI('claude')">
+                    🚀 CÁCH 2: CLAUDE API
+                </button>
+            </div>
+
+            <!-- CÁCH 4: GEMINI API -->
+            <div style="background:#fff; border:1px solid var(--line); padding:16px; border-radius:10px;">
+                <label>🔑 API Key Gemini (Google)</label>
+                <input type="password" id="inpGeminiKey" placeholder="AIzaSy..." style="margin-bottom:12px">
+                <button class="btn" id="btnGenGeminiAPI" style="width:100%; background:var(--gemini); font-size:14px" onclick="generateAPI('gemini')">
+                    🚀 CÁCH 4: GEMINI API
+                </button>
+            </div>
+        </div>
     </div>
 
-    <button class="btn" id="btnGenerateAPI" style="width:100%;font-size:16px;padding:16px" onclick="generateExamAPI()">
-      🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API
-    </button>
   </div>
 
   <div id="statusBox"></div>
@@ -122,7 +145,7 @@ textarea{resize:vertical;min-height:200px}
 
 <script>
 // ==========================================
-// CẤU HÌNH DÙNG THỬ CỦA CÁCH 1 (FREE PROMPT)
+// CẤU HÌNH VÀ SYSTEM PROMPT
 // ==========================================
 const MAX_FREE_TRIALS = 1;
 const VALID_FREE_PASSWORD = "phamtien17081983@";
@@ -164,53 +187,58 @@ Cấu trúc phần này:
 - Giải thích chi tiết cho từng câu (Tại sao đúng, tại sao sai, dịch nghĩa nếu cần).`;
 
 // ==========================================
-// KIỂM TRA TRẠNG THÁI BẢN QUYỀN (CHỈ DÀNH CHO CÁCH 1)
+// KIỂM TRA TRẠNG THÁI DÙNG THỬ (CÁCH 1 & 3)
 // ==========================================
 function checkLicenseStatus() {
-    const isFreeActivated = localStorage.getItem('claude_free_activated') === 'true';
-    const freeTrialCount = parseInt(localStorage.getItem('claude_free_trials') || '0');
+    const isFreeActivated = localStorage.getItem('ai_free_activated') === 'true';
+    const freeTrialCount = parseInt(localStorage.getItem('ai_free_trials') || '0');
     
     const badgeFree = document.getElementById('freeTrialBadge');
     const unlockWrapFree = document.getElementById('freeUnlockWrap');
-    const btnGenFree = document.getElementById('btnGenerateFree');
+    const btnGenC = document.getElementById('btnGenClaudeFree');
+    const btnGenG = document.getElementById('btnGenGeminiFree');
 
     if (isFreeActivated) {
         badgeFree.style.background = '#16a34a';
         badgeFree.textContent = '✓ Đã mở khóa đăng nhập';
         unlockWrapFree.style.display = 'none';
-        btnGenFree.disabled = false;
-        btnGenFree.innerHTML = "📋 TẠO VÀ COPY LỆNH ĐỂ DÁN VÀO CLAUDE.AI";
+        btnGenC.disabled = false;
+        btnGenG.disabled = false;
+        btnGenC.innerHTML = "📋 CÁCH 1: LỆNH CHO CLAUDE";
+        btnGenG.innerHTML = "📋 CÁCH 3: LỆNH CHO GEMINI";
     } else {
         const remainingFree = MAX_FREE_TRIALS - freeTrialCount;
         if (remainingFree > 0) {
             badgeFree.style.background = '#f59e0b';
             badgeFree.textContent = `Dùng thử: ${remainingFree}/${MAX_FREE_TRIALS} lần`;
             unlockWrapFree.style.display = 'none';
-            btnGenFree.disabled = false;
-            btnGenFree.innerHTML = "📋 TẠO VÀ COPY LỆNH ĐỂ DÁN VÀO CLAUDE.AI";
+            btnGenC.disabled = false;
+            btnGenG.disabled = false;
         } else {
             badgeFree.style.background = '#dc2626';
             badgeFree.textContent = `Đã hết lượt dùng thử`;
             unlockWrapFree.style.display = 'block';
-            btnGenFree.disabled = true;
-            btnGenFree.innerHTML = "🔒 ĐÃ KHÓA (YÊU CẦU ĐĂNG NHẬP BÊN TRÊN)";
+            btnGenC.disabled = true;
+            btnGenG.disabled = true;
+            btnGenC.innerHTML = "🔒 ĐÃ KHÓA CÁCH 1";
+            btnGenG.innerHTML = "🔒 ĐÃ KHÓA CÁCH 3";
         }
     }
 }
 
-// Reset lượt dùng thử Cách 1
-function resetFreeTrial() {
-    localStorage.setItem('claude_free_trials', '0');
-    localStorage.removeItem('claude_free_activated');
-    alert("🔄 Đã reset số lượt dùng thử về 0!");
-    checkLicenseStatus();
+function resetAllTrials() {
+    if(confirm("Bạn có chắc chắn muốn làm mới (Reset) lại toàn bộ lượt dùng thử?")) {
+        localStorage.setItem('ai_free_trials', '0');
+        localStorage.removeItem('ai_free_activated'); // Xóa luôn trạng thái đăng nhập
+        checkLicenseStatus();
+        alert("🔄 Đã làm mới số lượt dùng thử về 0 thành công!");
+    }
 }
 
-// Hàm kích hoạt tính năng Free (Cách 1)
 function unlockFreeMode() {
     const pwd = document.getElementById('inpFreePassword').value;
     if (pwd === VALID_FREE_PASSWORD) {
-        localStorage.setItem('claude_free_activated', 'true');
+        localStorage.setItem('ai_free_activated', 'true');
         alert("🎉 Đăng nhập thành công! Đã mở khóa tính năng Tạo Lệnh Miễn Phí vĩnh viễn.");
         checkLicenseStatus();
         document.getElementById('inpFreePassword').value = '';
@@ -221,8 +249,10 @@ function unlockFreeMode() {
 
 window.onload = () => {
     checkLicenseStatus();
-    const savedKey = localStorage.getItem('claude_api_key');
-    if(savedKey) document.getElementById('inpApiKey').value = savedKey;
+    const savedC = localStorage.getItem('claude_api_key');
+    const savedG = localStorage.getItem('gemini_api_key');
+    if(savedC) document.getElementById('inpClaudeKey').value = savedC;
+    if(savedG) document.getElementById('inpGeminiKey').value = savedG;
 };
 
 // ==========================================
@@ -265,10 +295,12 @@ function showStatus(msg, type) {
     box.textContent = msg;
 }
 
-// Hàm sinh Prompt Miễn Phí (Dành cho web Claude.ai)
-function generateFreePrompt() {
-    const isActivated = localStorage.getItem('claude_free_activated') === 'true';
-    let trialCount = parseInt(localStorage.getItem('claude_free_trials') || '0');
+// ==========================================
+// CÁCH 1 & CÁCH 3: TẠO PROMPT COPY
+// ==========================================
+function generateFreePrompt(aiType) {
+    const isActivated = localStorage.getItem('ai_free_activated') === 'true';
+    let trialCount = parseInt(localStorage.getItem('ai_free_trials') || '0');
 
     if (!isActivated && trialCount >= MAX_FREE_TRIALS) {
         checkLicenseStatus();
@@ -280,7 +312,6 @@ function generateFreePrompt() {
 
     const finalPrompt = `${SYSTEM_PROMPT}\n\n=== DƯỚI ĐÂY LÀ ĐỀ MẪU CỦA TÔI ===\n\n${inputText}`;
     
-    // Copy to clipboard
     const tempTextArea = document.createElement("textarea");
     tempTextArea.value = finalPrompt;
     document.body.appendChild(tempTextArea);
@@ -288,82 +319,114 @@ function generateFreePrompt() {
     document.execCommand("copy");
     document.body.removeChild(tempTextArea);
 
-    // Mở trang tạo chat mới của Claude thay vì trang chủ
-    alert("🎉 THÀNH CÔNG! Đã copy Lệnh tạo đề thi vào bộ nhớ tạm.\n\nBây giờ hệ thống sẽ mở trang Claude. Hãy DÁN lệnh này vào ô chat nhé!");
-    
-    // Lưu lượt dùng nếu chưa kích hoạt
     if (!isActivated) {
         trialCount++;
-        localStorage.setItem('claude_free_trials', trialCount.toString());
+        localStorage.setItem('ai_free_trials', trialCount.toString());
         checkLicenseStatus();
     }
 
-    // Liên kết với tài khoản Claude
-    window.open("https://claude.ai/new", "_blank");
+    if (aiType === 'claude') {
+        alert("🎉 THÀNH CÔNG! Đã copy Lệnh vào bộ nhớ tạm.\n\nHệ thống sẽ mở trang Claude. Hãy DÁN lệnh này vào ô chat nhé!");
+        window.open("https://claude.ai/new", "_blank");
+    } else if (aiType === 'gemini') {
+        alert("🎉 THÀNH CÔNG! Đã copy Lệnh vào bộ nhớ tạm.\n\nHệ thống sẽ mở trang Gemini. Hãy DÁN lệnh này vào ô chat nhé!");
+        window.open("https://gemini.google.com/app", "_blank");
+    }
 }
 
-// Hàm gọi API trả phí tự động (Không giới hạn)
-async function generateExamAPI() {
-    const apiKey = document.getElementById('inpApiKey').value.trim();
+// ==========================================
+// CÁCH 2 & CÁCH 4: CHẠY API TỰ ĐỘNG
+// ==========================================
+async function generateAPI(aiType) {
     const inputText = document.getElementById('inpText').value.trim();
-    
-    if(!apiKey) return alert("Vui lòng nhập API Key của Anthropic!");
     if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên!");
 
-    localStorage.setItem('claude_api_key', apiKey);
+    const btnClaude = document.getElementById('btnGenClaudeAPI');
+    const btnGemini = document.getElementById('btnGenGeminiAPI');
 
-    const btn = document.getElementById('btnGenerateAPI');
-    btn.disabled = true;
-    btn.innerHTML = "⏳ Đang kết nối tới API Claude... Vui lòng đợi (có thể mất 1-2 phút)";
     document.getElementById('outputWrap').style.display = 'none';
-    showStatus("Hệ thống đang phân tích đề mẫu và sinh đề mới qua API. Vui lòng không đóng trình duyệt...", "loading");
+    showStatus("Đang phân tích đề mẫu và sinh đề mới qua API. Vui lòng không đóng trình duyệt...", "loading");
 
     try {
-        const targetUrl = 'https://api.anthropic.com/v1/messages';
-        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
+        if (aiType === 'claude') {
+            const apiKey = document.getElementById('inpClaudeKey').value.trim();
+            if(!apiKey) return alert("Vui lòng nhập API Key của Claude!");
+            localStorage.setItem('claude_api_key', apiKey);
+            
+            btnClaude.disabled = true;
+            btnClaude.innerHTML = "⏳ Đang xử lý...";
+            
+            const targetUrl = 'https://api.anthropic.com/v1/messages';
+            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
 
-        const response = await fetch(proxyUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'anthropic-dangerously-allow-browser': 'true'
-            },
-            body: JSON.stringify({
-                model: 'claude-3-5-sonnet-20241022',
-                max_tokens: 8192, 
-                temperature: 0.4, 
-                system: SYSTEM_PROMPT,
-                messages: [
-                    { 
-                        role: 'user', 
-                        content: `Dưới đây là ĐỀ MẪU. Hãy dựa vào đây để biên soạn đề thi mới theo đúng các quy tắc đã được giao:\n\n<sample_exam>\n${inputText}\n</sample_exam>` 
-                    }
-                ]
-            })
-        });
+            const response = await fetch(proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-dangerously-allow-browser': 'true'
+                },
+                body: JSON.stringify({
+                    model: 'claude-3-5-sonnet-20241022',
+                    max_tokens: 8192, 
+                    temperature: 0.4, 
+                    system: SYSTEM_PROMPT,
+                    messages: [
+                        { role: 'user', content: `Dưới đây là ĐỀ MẪU. Hãy dựa vào đây để biên soạn đề thi mới:\n\n<sample_exam>\n${inputText}\n</sample_exam>` }
+                    ]
+                })
+            });
 
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error?.message || `Lỗi HTTP: ${response.status}`);
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error?.message || `Lỗi HTTP: ${response.status}`);
+            }
+
+            const data = await response.json();
+            document.getElementById('outText').value = data.content[0].text;
+
+        } else if (aiType === 'gemini') {
+            const apiKey = document.getElementById('inpGeminiKey').value.trim();
+            if(!apiKey) return alert("Vui lòng nhập API Key của Gemini!");
+            localStorage.setItem('gemini_api_key', apiKey);
+
+            btnGemini.disabled = true;
+            btnGemini.innerHTML = "⏳ Đang xử lý...";
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+                    contents: [{ parts: [{ text: `Dưới đây là ĐỀ MẪU. Hãy dựa vào đây để biên soạn đề thi mới:\n\n<sample_exam>\n${inputText}\n</sample_exam>` }] }],
+                    generationConfig: { temperature: 0.4 }
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error?.message || `Lỗi HTTP: ${response.status}`);
+            }
+
+            const data = await response.json();
+            document.getElementById('outText').value = data.candidates[0].content.parts[0].text;
         }
 
-        const data = await response.json();
-        const generatedText = data.content[0].text;
-
-        document.getElementById('outText').value = generatedText;
         document.getElementById('outputWrap').style.display = 'block';
         showStatus("Hoàn tất! Đề thi tự động đã được tạo thành công.", "success");
-
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
 
     } catch (error) {
         console.error(error);
         showStatus("Lỗi: " + error.message, "error");
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = "🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API";
+        btnClaude.disabled = false;
+        btnClaude.innerHTML = "🚀 CÁCH 2: CLAUDE API";
+        btnGemini.disabled = false;
+        btnGemini.innerHTML = "🚀 CÁCH 4: GEMINI API";
     }
 }
 
@@ -380,7 +443,7 @@ function downloadResult() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `De_Thi_Claude_${new Date().getTime()}.txt`;
+    link.download = `De_Thi_AI_${new Date().getTime()}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
