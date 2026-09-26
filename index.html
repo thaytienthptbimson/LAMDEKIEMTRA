@@ -50,18 +50,8 @@ textarea{resize:vertical;min-height:200px}
   <div class="card" style="background:linear-gradient(135deg, #7c3aed, #4f46e5); color:#fff; padding:40px 32px">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
         <h1 style="color:#fff;font-size:28px">Claude AI - Bộ Tạo Đề Thi Tiếng Anh</h1>
-        <span id="trialBadge" style="background:#f59e0b; color:#fff; padding:6px 14px; border-radius:999px; font-size:13.5px; font-weight:bold; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1)"></span>
     </div>
     <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate. Hỗ trợ API tự động hoặc tạo Lệnh dùng miễn phí.</div>
-  </div>
-
-  <div class="card" id="activationWrap" style="display:none; background:#fffbeb; border-color:#fde047; box-shadow:0 4px 15px rgba(234,179,8,0.15)">
-    <h3 style="margin-top:0; color:#b45309; display:flex; align-items:center; gap:8px;">🔒 Đã Hết Lượt Tự Động Tạo Bằng API</h3>
-    <p style="font-size:14.5px; color:#92400e; margin-bottom:16px;">Bạn đã sử dụng hết <b>10 lần</b> tạo đề tự động qua API. Vui lòng nhập Key kích hoạt bản quyền (gồm đúng 12 ký tự) để sử dụng tự động vĩnh viễn, hoặc dùng chức năng <b>Tạo Lệnh Miễn Phí</b> ở bên dưới.</p>
-    <div style="display:flex; gap:12px; flex-wrap:wrap">
-      <input type="text" id="inpLicenseKey" placeholder="Nhập Key 12 ký tự..." maxlength="12" style="flex:1; min-width:200px; text-transform:uppercase; font-weight:bold; letter-spacing:1px; border-color:#fde047">
-      <button class="btn" style="background:#ca8a04; color:#fff; border:none" onclick="activateKey()">Kích Hoạt API Tự Động</button>
-    </div>
   </div>
 
   <div class="card">
@@ -104,11 +94,11 @@ textarea{resize:vertical;min-height:200px}
 
     <!-- CÁCH 2: DÙNG API TỰ ĐỘNG -->
     <div class="form-group">
-      <label>Cấu hình API Key (Bỏ qua nếu dùng Cách 1)</label>
+      <label>Cấu hình API Key cá nhân (Không giới hạn lượt dùng)</label>
       <input type="password" id="inpApiKey" placeholder="sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
     </div>
 
-    <button class="btn" id="btnGenerate" style="width:100%;font-size:16px;padding:16px" onclick="generateExamAPI()">
+    <button class="btn" id="btnGenerateAPI" style="width:100%;font-size:16px;padding:16px" onclick="generateExamAPI()">
       🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API
     </button>
   </div>
@@ -129,11 +119,8 @@ textarea{resize:vertical;min-height:200px}
 
 <script>
 // ==========================================
-// CẤU HÌNH BẢN QUYỀN VÀ DÙNG THỬ
+// CẤU HÌNH BẢN QUYỀN VÀ DÙNG THỬ CỦA CÁCH 1 (FREE PROMPT)
 // ==========================================
-const MAX_API_TRIALS = 10;
-const VALID_API_KEY = "PHAMTIEN2026"; 
-
 const MAX_FREE_TRIALS = 1;
 const VALID_FREE_PASSWORD = "phamtien17081983@";
 
@@ -173,42 +160,9 @@ Cấu trúc phần này:
 - Giải thích chi tiết cho từng câu (Tại sao đúng, tại sao sai, dịch nghĩa nếu cần).`;
 
 // ==========================================
-// KIỂM TRA TRẠNG THÁI BẢN QUYỀN
+// KIỂM TRA TRẠNG THÁI BẢN QUYỀN (CHỈ DÀNH CHO CÁCH 1)
 // ==========================================
 function checkLicenseStatus() {
-    // 1. Kiểm tra Bản quyền API (Cách 2)
-    const isApiActivated = localStorage.getItem('claude_exam_activated') === 'true';
-    const apiTrialCount = parseInt(localStorage.getItem('claude_exam_trials') || '0');
-
-    const badgeApi = document.getElementById('trialBadge');
-    const actWrapApi = document.getElementById('activationWrap');
-    const btnGenApi = document.getElementById('btnGenerate');
-
-    if (isApiActivated) {
-        badgeApi.style.display = 'inline-block';
-        badgeApi.style.background = '#16a34a';
-        badgeApi.textContent = '✓ Bản Quyền API Vĩnh Viễn';
-        actWrapApi.style.display = 'none';
-        btnGenApi.disabled = false;
-        btnGenApi.innerHTML = "🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API";
-    } else {
-        const remainingApi = MAX_API_TRIALS - apiTrialCount;
-        badgeApi.style.display = 'inline-block';
-        
-        if (remainingApi > 0) {
-            badgeApi.textContent = `API Dùng thử: ${remainingApi}/${MAX_API_TRIALS} lần`;
-            actWrapApi.style.display = 'none';
-            btnGenApi.disabled = false;
-        } else {
-            badgeApi.style.background = '#dc2626';
-            badgeApi.textContent = `Đã hết lượt API tự động`;
-            actWrapApi.style.display = 'block';
-            btnGenApi.disabled = true;
-            btnGenApi.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT ĐỂ DÙNG API TỰ ĐỘNG";
-        }
-    }
-
-    // 2. Kiểm tra Bản quyền Cách 1 (Copy Prompt Miễn Phí)
     const isFreeActivated = localStorage.getItem('claude_free_activated') === 'true';
     const freeTrialCount = parseInt(localStorage.getItem('claude_free_trials') || '0');
     
@@ -239,22 +193,6 @@ function checkLicenseStatus() {
     }
 }
 
-// Hàm kích hoạt API
-function activateKey() {
-    const inputKey = document.getElementById('inpLicenseKey').value.trim().toUpperCase();
-    if (inputKey.length !== 12) {
-        alert("Lỗi: Key kích hoạt phải bao gồm ĐÚNG 12 ký tự. Vui lòng kiểm tra lại!");
-        return;
-    }
-    if (inputKey === VALID_API_KEY) {
-        localStorage.setItem('claude_exam_activated', 'true');
-        alert("🎉 Chúc mừng! Kích hoạt bản quyền API vĩnh viễn thành công.");
-        checkLicenseStatus();
-    } else {
-        alert("❌ Key kích hoạt không chính xác!");
-    }
-}
-
 // Hàm kích hoạt tính năng Free (Cách 1)
 function unlockFreeMode() {
     const pwd = document.getElementById('inpFreePassword').value;
@@ -274,7 +212,7 @@ window.onload = () => {
 };
 
 // ==========================================
-// XỬ LÝ CHỨC NĂNG
+// XỬ LÝ ĐỌC FILE (DOCX, TXT)
 // ==========================================
 function handleFileSelect(event) {
     const file = event.target.files[0];
@@ -348,16 +286,8 @@ function generateFreePrompt() {
     window.open("https://claude.ai", "_blank");
 }
 
-// Hàm gọi API trả phí tự động
+// Hàm gọi API trả phí tự động (Không giới hạn)
 async function generateExamAPI() {
-    const isActivated = localStorage.getItem('claude_exam_activated') === 'true';
-    let trialCount = parseInt(localStorage.getItem('claude_exam_trials') || '0');
-
-    if (!isActivated && trialCount >= MAX_API_TRIALS) {
-        checkLicenseStatus();
-        return;
-    }
-
     const apiKey = document.getElementById('inpApiKey').value.trim();
     const inputText = document.getElementById('inpText').value.trim();
     
@@ -366,7 +296,7 @@ async function generateExamAPI() {
 
     localStorage.setItem('claude_api_key', apiKey);
 
-    const btn = document.getElementById('btnGenerate');
+    const btn = document.getElementById('btnGenerateAPI');
     btn.disabled = true;
     btn.innerHTML = "⏳ Đang kết nối tới API Claude... Vui lòng đợi (có thể mất 1-2 phút)";
     document.getElementById('outputWrap').style.display = 'none';
@@ -410,24 +340,14 @@ async function generateExamAPI() {
         document.getElementById('outputWrap').style.display = 'block';
         showStatus("Hoàn tất! Đề thi tự động đã được tạo thành công.", "success");
 
-        if (!isActivated) {
-            trialCount++;
-            localStorage.setItem('claude_exam_trials', trialCount.toString());
-            checkLicenseStatus();
-        }
-
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
 
     } catch (error) {
         console.error(error);
         showStatus("Lỗi: " + error.message, "error");
     } finally {
-        if (localStorage.getItem('claude_exam_activated') !== 'true' && parseInt(localStorage.getItem('claude_exam_trials') || '0') >= MAX_API_TRIALS) {
-            btn.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT BẢN QUYỀN ĐỂ DÙNG API TỰ ĐỘNG";
-        } else {
-            btn.disabled = false;
-            btn.innerHTML = "🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API";
-        }
+        btn.disabled = false;
+        btn.innerHTML = "🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API";
     }
 }
 
