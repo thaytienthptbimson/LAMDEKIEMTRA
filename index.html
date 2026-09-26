@@ -71,14 +71,17 @@ textarea{resize:vertical;min-height:200px}
     <!-- CÁCH 1: DÙNG MIỄN PHÍ TRÊN CLAUDE.AI -->
     <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:24px; margin-bottom:24px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:10px;">
-            <h3 style="margin:0; color:#166534;">Cách 1: Dùng tài khoản Claude.ai Miễn Phí</h3>
+            <div style="display:flex; align-items:center; gap: 10px;">
+                <h3 style="margin:0; color:#166534;">Cách 1: Dùng tài khoản Claude.ai Miễn Phí</h3>
+                <button class="btn btn-outline sm" style="padding: 4px 10px; font-size: 12px; border-color: #166534; color: #166534;" onclick="resetFreeTrial()">🔄 Reset lượt</button>
+            </div>
             <span id="freeTrialBadge" style="background:#f59e0b; color:#fff; padding:4px 12px; border-radius:999px; font-size:12.5px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.05)"></span>
         </div>
         <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ gộp Đề Mẫu của bạn với các Quy tắc khắt khe thành một Lệnh chuẩn. Bạn chỉ cần copy và dán vào tài khoản Gmail Claude.ai của mình.</p>
         
         <!-- Vùng nhập Mật khẩu cho Cách 1 (Ẩn mặc định) -->
         <div id="freeUnlockWrap" style="display:none; margin-bottom:16px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px;">
-            <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hết 1 lượt thử. Vui lòng đăng nhập mật khẩu để dùng tiếp:</label>
+            <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hết lượt thử. Vui lòng đăng nhập mật khẩu để dùng tiếp:</label>
             <div style="display:flex; gap:10px; flex-wrap:wrap">
                 <input type="password" id="inpFreePassword" placeholder="Mật khẩu..." style="flex:1; border-color:#fde047;">
                 <button class="btn" style="background:#ca8a04; color:#fff; border:none;" onclick="unlockFreeMode()">Đăng Nhập</button>
@@ -119,7 +122,7 @@ textarea{resize:vertical;min-height:200px}
 
 <script>
 // ==========================================
-// CẤU HÌNH BẢN QUYỀN VÀ DÙNG THỬ CỦA CÁCH 1 (FREE PROMPT)
+// CẤU HÌNH DÙNG THỬ CỦA CÁCH 1 (FREE PROMPT)
 // ==========================================
 const MAX_FREE_TRIALS = 1;
 const VALID_FREE_PASSWORD = "phamtien17081983@";
@@ -144,12 +147,13 @@ Tuyệt đối chỉ in ra nội dung đề thi trong phần này. KHÔNG kèm t
 - Trích dẫn: Ghi rõ nguồn trong ngoặc đơn nghiêng ngay sau khi kết thúc văn bản bài đọc. Ví dụ: (Adapted from [Nguồn])
 - Tuân thủ chính xác các dạng câu hỏi của bài đọc mẫu.
 
-4. ĐỊNH DẠNG CÂU HỎI ĐỌC HIỂU:
+4. ĐỊNH DẠNG CÂU HỎI VÀ ĐOẠN VĂN ĐỌC HIỂU:
 - Bắt buộc in đậm (Bold) trực tiếp vào đoạn văn đọc hiểu đối với:
   + Từ vựng được hỏi đồng nghĩa/trái nghĩa.
   + Đại từ tham chiếu được hỏi.
   + Các từ, cụm từ được hỏi nằm trong câu hỏi.
   + Toàn bộ câu/mệnh đề được hỏi ý chính/paraphrase.
+- TRONG NỘI DUNG CÂU HỎI: Phải bôi đen (in đậm) từ/cụm từ được trích dẫn để hỏi. Ví dụ: The word "**XYZ**" in paragraph 1 is closest in meaning to...
 - Định dạng 4 phương án cho câu đọc hiểu: Phải có độ dài tương đương nhau (chênh lệch tối đa 3-4 từ), viết thành câu hoàn chỉnh nếu hỏi về nội dung.
 
 ---
@@ -183,6 +187,7 @@ function checkLicenseStatus() {
             badgeFree.textContent = `Dùng thử: ${remainingFree}/${MAX_FREE_TRIALS} lần`;
             unlockWrapFree.style.display = 'none';
             btnGenFree.disabled = false;
+            btnGenFree.innerHTML = "📋 TẠO VÀ COPY LỆNH ĐỂ DÁN VÀO CLAUDE.AI";
         } else {
             badgeFree.style.background = '#dc2626';
             badgeFree.textContent = `Đã hết lượt dùng thử`;
@@ -193,6 +198,14 @@ function checkLicenseStatus() {
     }
 }
 
+// Reset lượt dùng thử Cách 1
+function resetFreeTrial() {
+    localStorage.setItem('claude_free_trials', '0');
+    localStorage.removeItem('claude_free_activated');
+    alert("🔄 Đã reset số lượt dùng thử về 0!");
+    checkLicenseStatus();
+}
+
 // Hàm kích hoạt tính năng Free (Cách 1)
 function unlockFreeMode() {
     const pwd = document.getElementById('inpFreePassword').value;
@@ -200,6 +213,7 @@ function unlockFreeMode() {
         localStorage.setItem('claude_free_activated', 'true');
         alert("🎉 Đăng nhập thành công! Đã mở khóa tính năng Tạo Lệnh Miễn Phí vĩnh viễn.");
         checkLicenseStatus();
+        document.getElementById('inpFreePassword').value = '';
     } else {
         alert("❌ Mật khẩu không chính xác!");
     }
@@ -274,7 +288,8 @@ function generateFreePrompt() {
     document.execCommand("copy");
     document.body.removeChild(tempTextArea);
 
-    alert("🎉 THÀNH CÔNG! Đã copy Lệnh tạo đề thi vào bộ nhớ tạm.\n\nBây giờ hãy mở một Tab mới, truy cập trang claude.ai (đăng nhập bằng Gmail miễn phí) và DÁN lệnh này vào ô chat nhé!");
+    // Mở trang tạo chat mới của Claude thay vì trang chủ
+    alert("🎉 THÀNH CÔNG! Đã copy Lệnh tạo đề thi vào bộ nhớ tạm.\n\nBây giờ hệ thống sẽ mở trang Claude. Hãy DÁN lệnh này vào ô chat nhé!");
     
     // Lưu lượt dùng nếu chưa kích hoạt
     if (!isActivated) {
@@ -283,7 +298,8 @@ function generateFreePrompt() {
         checkLicenseStatus();
     }
 
-    window.open("https://claude.ai", "_blank");
+    // Liên kết với tài khoản Claude
+    window.open("https://claude.ai/new", "_blank");
 }
 
 // Hàm gọi API trả phí tự động (Không giới hạn)
