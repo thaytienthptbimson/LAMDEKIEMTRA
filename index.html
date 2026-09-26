@@ -4,10 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Công Cụ Sinh Đề Thi Bằng AI (Claude & Gemini)</title>
-<!-- Thư viện đọc file Word -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
-<!-- Thư viện xuất file Word (.docx) -->
-<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
 <style>
 :root{
   --bg:#f4f6fb;--card:#ffffff;--ink:#1e293b;--mut:#64748b;--line:#e2e8f0;
@@ -38,7 +35,9 @@ textarea{resize:vertical;min-height:200px}
 .status-loading{background:#fef08a;color:#854d0e;border:1px solid #fde047}
 .status-success{background:#dcfce7;color:#166534;border:1px solid #86efac}
 .status-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+#outputWrap{display:none}
 .note{font-size:13px;color:var(--mut);background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--line);margin-top:8px}
+
 .divider { display: flex; align-items: center; text-align: center; margin: 30px 0; color: var(--mut); font-weight: 600; font-size: 13px; text-transform: uppercase; }
 .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
 .divider:not(:empty)::before { margin-right: 15px; }
@@ -77,10 +76,10 @@ textarea{resize:vertical;min-height:200px}
     <!-- TẠO LỆNH THỦ CÔNG (MIỄN PHÍ) -->
     <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:24px; margin-bottom:24px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:10px;">
-            <h3 style="margin:0; color:#166534;">Công cụ Miễn Phí (Tạo Lệnh Thủ Công)</h3>
+            <h3 style="margin:0; color:#166534;">Công cụ Miễn Phí (Tạo Lệnh Bán Tự Động)</h3>
             <span id="freeTrialBadge" style="background:#f59e0b; color:#fff; padding:4px 12px; border-radius:999px; font-size:12.5px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.05)"></span>
         </div>
-        <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ gộp Đề Mẫu của bạn với các Quy tắc thành một Lệnh chuẩn. Bạn chỉ cần copy và dán vào AI bạn muốn sử dụng.</p>
+        <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ đóng gói Đề mẫu & Quy tắc thành một Lệnh chuẩn, tự động copy và mở web AI. Việc của bạn chỉ là bấm <b>Ctrl + V</b> vào ô chat.</p>
         
         <!-- Ô nhập Pass Mở khóa -->
         <div id="freeUnlockWrap" style="display:none; margin-bottom:16px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px;">
@@ -101,7 +100,7 @@ textarea{resize:vertical;min-height:200px}
         </div>
     </div>
 
-    <div class="divider">Chạy Tự Động Bằng API (Yêu cầu API Key)</div>
+    <div class="divider">Chạy Tự Động Toàn Diện (Yêu cầu API Key)</div>
 
     <!-- TẠO ĐỀ TỰ ĐỘNG BẰNG API -->
     <div style="background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px;">
@@ -135,7 +134,7 @@ textarea{resize:vertical;min-height:200px}
   <!-- VÙNG KẾT QUẢ VÀ XUẤT FILE ĐỀ THI -->
   <div class="card" id="outputWrap">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-      <h2 style="margin:0;color:var(--ok);font-size:20px;">✅ Kết Quả & Xuất File</h2>
+      <h2 id="outputTitle" style="margin:0;color:var(--ok);font-size:20px;">✅ Kết Quả & Xuất File</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-outline sm" onclick="copyResult()">📋 Copy Tất Cả</button>
         <button class="btn primary sm" onclick="downloadResult()">💾 Tải File Text</button>
@@ -143,9 +142,9 @@ textarea{resize:vertical;min-height:200px}
       </div>
     </div>
     
-    <div style="font-size:13.5px;color:var(--mut);margin-bottom:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px dashed var(--line)">
-        <i>* Nếu dùng <b>Cách 1</b> hoặc <b>Cách 3</b>: Bạn hãy dán kết quả từ Claude/Gemini vào ô dưới đây rồi bấm "Tải File Word (.docx)".<br>
-        * Nếu dùng <b>Cách 2</b> hoặc <b>Cách 4</b>: Kết quả sẽ tự động hiện ra ở đây.</i>
+    <div id="outputGuide" style="font-size:13.5px;color:var(--mut);margin-bottom:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px dashed var(--line)">
+        <i>* Nếu dùng <b>Cách 1</b> hoặc <b>Cách 3</b>: Lệnh đã được sao chép. Bạn hãy dán (Ctrl+V) vào Claude/Gemini. Khi AI làm xong, hãy copy đáp án và <b>DÁN ĐÈ VÀO Ô NÀY</b> rồi bấm "Tải File Word (.docx)".<br>
+        * Nếu dùng <b>Cách 2</b> hoặc <b>Cách 4</b>: Kết quả đề thi sẽ tự động hiển thị ở đây.</i>
     </div>
     
     <textarea id="outText" placeholder="Kết quả tạo đề sẽ hiện ở đây, hoặc bạn dán kết quả thủ công vào đây..." style="min-height:500px;font-family:'Times New Roman',serif;font-size:16px"></textarea>
@@ -307,7 +306,7 @@ function showStatus(msg, type) {
 }
 
 // ==========================================
-// CÁCH 1 & CÁCH 3: TẠO PROMPT COPY
+// CÁCH 1 & CÁCH 3: TẠO PROMPT COPY VÀ HIỂN THỊ VÀO TEXTAREA
 // ==========================================
 function generateFreePrompt(aiType) {
     const isActivated = localStorage.getItem('ai_free_activated') === 'true';
@@ -323,6 +322,12 @@ function generateFreePrompt(aiType) {
 
     const finalPrompt = `${SYSTEM_PROMPT}\n\n=== DƯỚI ĐÂY LÀ ĐỀ MẪU CỦA TÔI ===\n\n${inputText}`;
     
+    // In nội dung vào ô kết quả
+    document.getElementById('outText').value = finalPrompt;
+    document.getElementById('outputTitle').innerHTML = "⏳ Lệnh Đã Tạo Xong (Dán Đè Kết Quả Của AI Vào Đây)";
+    document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
+
+    // Copy to clipboard
     const tempTextArea = document.createElement("textarea");
     tempTextArea.value = finalPrompt;
     document.body.appendChild(tempTextArea);
@@ -337,10 +342,10 @@ function generateFreePrompt(aiType) {
     }
 
     if (aiType === 'claude') {
-        alert("🎉 THÀNH CÔNG! Đã copy Lệnh vào bộ nhớ tạm.\n\nHệ thống sẽ mở trang Claude. Hãy DÁN lệnh này vào ô chat nhé!");
+        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY SẴN VÀO CHUỘT!\n\nTrang web Claude sẽ được mở ngay sau đây.\n👉 Thầy/Cô chỉ cần bấm [Ctrl + V] vào ô chat và nhấn Enter để Claude tự động làm việc.");
         window.open("https://claude.ai/new", "_blank");
     } else if (aiType === 'gemini') {
-        alert("🎉 THÀNH CÔNG! Đã copy Lệnh vào bộ nhớ tạm.\n\nHệ thống sẽ mở trang Gemini. Hãy DÁN lệnh này vào ô chat nhé!");
+        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY SẴN VÀO CHUỘT!\n\nTrang web Gemini sẽ được mở ngay sau đây.\n👉 Thầy/Cô chỉ cần bấm [Ctrl + V] vào ô chat và nhấn Enter để Gemini tự động làm việc.");
         window.open("https://gemini.google.com/app", "_blank");
     }
 }
@@ -355,6 +360,7 @@ async function generateAPI(aiType) {
     const btnClaude = document.getElementById('btnGenClaudeAPI');
     const btnGemini = document.getElementById('btnGenGeminiAPI');
 
+    document.getElementById('outputTitle').innerHTML = "✅ Kết Quả Đề Thi";
     showStatus("Đang phân tích đề mẫu và sinh đề mới qua API. Vui lòng không đóng trình duyệt...", "loading");
 
     try {
@@ -404,7 +410,6 @@ async function generateAPI(aiType) {
             btnGemini.disabled = true;
             btnGemini.innerHTML = "⏳ Đang xử lý...";
 
-            // SỬA LỖI MODEL GEMINI API Ở ĐÂY
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
             
             const response = await fetch(url, {
@@ -480,11 +485,9 @@ function downloadDocx() {
 
     const lines = text.split('\n');
     const paragraphs = lines.map(line => {
-        // Tách chuỗi theo định dạng markdown **in đậm**
         const parts = line.split(/(\*\*.*?\*\*)/g);
         const textRuns = parts.map(part => {
             if (part.startsWith('**') && part.endsWith('**')) {
-                // Xóa bỏ dấu ** và cấu hình in đậm
                 return new docx.TextRun({ text: part.slice(2, -2), bold: true, font: "Times New Roman", size: 28 }); // size 28 = 14pt
             }
             return new docx.TextRun({ text: part, font: "Times New Roman", size: 28 });
