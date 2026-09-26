@@ -37,6 +37,11 @@ textarea{resize:vertical;min-height:200px}
 .status-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
 #outputWrap{display:none}
 .note{font-size:13px;color:var(--mut);background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--line);margin-top:8px}
+
+.divider { display: flex; align-items: center; text-align: center; margin: 30px 0; color: var(--mut); font-weight: 600; font-size: 13px; text-transform: uppercase; }
+.divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
+.divider:not(:empty)::before { margin-right: 15px; }
+.divider:not(:empty)::after { margin-left: 15px; }
 </style>
 </head>
 <body>
@@ -47,41 +52,51 @@ textarea{resize:vertical;min-height:200px}
         <h1 style="color:#fff;font-size:28px">Claude AI - Bộ Tạo Đề Thi Tiếng Anh</h1>
         <span id="trialBadge" style="background:#f59e0b; color:#fff; padding:6px 14px; border-radius:999px; font-size:13.5px; font-weight:bold; display:none; box-shadow:0 4px 6px rgba(0,0,0,0.1)"></span>
     </div>
-    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate.</div>
+    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate. Hỗ trợ API tự động hoặc tạo Lệnh dùng miễn phí.</div>
   </div>
 
-  <!-- Vùng nhập Key kích hoạt (Ẩn mặc định) -->
   <div class="card" id="activationWrap" style="display:none; background:#fffbeb; border-color:#fde047; box-shadow:0 4px 15px rgba(234,179,8,0.15)">
-    <h3 style="margin-top:0; color:#b45309; display:flex; align-items:center; gap:8px;">🔒 Đã Hết Lượt Dùng Thử</h3>
-    <p style="font-size:14.5px; color:#92400e; margin-bottom:16px;">Bạn đã sử dụng hết <b>10 lần</b> tạo đề miễn phí. Vui lòng nhập Key kích hoạt bản quyền (gồm đúng 12 ký tự) để sử dụng vĩnh viễn.</p>
+    <h3 style="margin-top:0; color:#b45309; display:flex; align-items:center; gap:8px;">🔒 Đã Hết Lượt Tự Động Tạo Bằng API</h3>
+    <p style="font-size:14.5px; color:#92400e; margin-bottom:16px;">Bạn đã sử dụng hết <b>10 lần</b> tạo đề tự động qua API. Vui lòng nhập Key kích hoạt bản quyền (gồm đúng 12 ký tự) để sử dụng tự động vĩnh viễn, hoặc dùng chức năng <b>Tạo Lệnh Miễn Phí</b> ở bên dưới.</p>
     <div style="display:flex; gap:12px; flex-wrap:wrap">
       <input type="text" id="inpLicenseKey" placeholder="Nhập Key 12 ký tự..." maxlength="12" style="flex:1; min-width:200px; text-transform:uppercase; font-weight:bold; letter-spacing:1px; border-color:#fde047">
-      <button class="btn" style="background:#ca8a04; color:#fff; border:none" onclick="activateKey()">Kích Hoạt Ngay</button>
+      <button class="btn" style="background:#ca8a04; color:#fff; border:none" onclick="activateKey()">Kích Hoạt API Tự Động</button>
     </div>
   </div>
 
   <div class="card">
     <div class="form-group">
-      <label>1. Cấu hình API Key của Claude (Anthropic)</label>
-      <input type="password" id="inpApiKey" placeholder="sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-      <div class="note">Nhận API Key miễn phí hoặc trả phí tại: <a href="https://console.anthropic.com/" target="_blank" style="color:var(--brand)">console.anthropic.com</a>. Hệ thống lưu Key cục bộ trên trình duyệt của bạn.</div>
-    </div>
-
-    <div class="form-group">
-      <label>2. Cung cấp Đề Thi Mẫu</label>
+      <label>1. Nguồn Đề Thi Mẫu (Bắt buộc)</label>
       <div class="grid-2">
         <label class="file-drop" id="dropZone">
           <div style="font-size:24px;margin-bottom:8px">📁</div>
           <div>Bấm để chọn file <b>.docx</b> hoặc <b>.txt</b></div>
           <input type="file" id="inpFile" accept=".docx,.txt" onchange="handleFileSelect(event)">
         </label>
-        <div style="display:flex;align-items:center;justify-content:center;color:var(--mut);font-weight:600">HOẶC DÁN VĂN BẢN XUỐNG DƯỚI</div>
+        <div style="display:flex;align-items:center;justify-content:center;color:var(--mut);font-weight:600">HOẶC DÁN TRỰC TIẾP</div>
       </div>
       <textarea id="inpText" placeholder="Dán nội dung đề mẫu vào đây..." style="margin-top:16px"></textarea>
     </div>
 
-    <button class="btn" id="btnGenerate" style="width:100%;font-size:16px;padding:16px" onclick="generateExam()">
-      🚀 BẮT ĐẦU BIÊN SOẠN ĐỀ MỚI
+    <!-- CÁCH 1: DÙNG MIỄN PHÍ TRÊN CLAUDE.AI -->
+    <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:24px; margin-bottom:24px;">
+        <h3 style="margin-top:0; color:#166534; margin-bottom:8px;">Cách 1: Dùng tài khoản Claude.ai Miễn Phí (Thủ công)</h3>
+        <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ gộp Đề Mẫu của bạn với các Quy tắc khắt khe thành một Lệnh chuẩn. Bạn chỉ cần copy và dán vào tài khoản Gmail Claude.ai của mình.</p>
+        <button class="btn" style="width:100%; background:#16a34a; border-color:#16a34a; font-size:15.5px" onclick="generateFreePrompt()">
+            📋 TẠO VÀ COPY LỆNH ĐỂ DÁN VÀO CLAUDE.AI
+        </button>
+    </div>
+
+    <div class="divider">Cách 2: Chạy Tự Động Trực Tiếp (Cần API Key Trả Phí)</div>
+
+    <!-- CÁCH 2: DÙNG API TỰ ĐỘNG -->
+    <div class="form-group">
+      <label>Cấu hình API Key (Bỏ qua nếu dùng Cách 1)</label>
+      <input type="password" id="inpApiKey" placeholder="sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+    </div>
+
+    <button class="btn" id="btnGenerate" style="width:100%;font-size:16px;padding:16px" onclick="generateExamAPI()">
+      🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API
     </button>
   </div>
 
@@ -100,11 +115,44 @@ textarea{resize:vertical;min-height:200px}
 </div>
 
 <script>
-// ==========================================
-// HỆ THỐNG KIỂM SOÁT BẢN QUYỀN (10 LẦN DÙNG THỬ)
-// ==========================================
 const MAX_TRIALS = 10;
-const VALID_KEY = "PHAMTIEN2026"; // Mã key vĩnh viễn (Đúng 12 ký tự)
+const VALID_KEY = "PHAMTIEN2026"; 
+
+const SYSTEM_PROMPT = `Bạn là một chuyên gia khảo thí và biên soạn đề thi Tiếng Anh cấp cao. 
+Nhiệm vụ của bạn là phân tích "ĐỀ MẪU" do người dùng cung cấp và biên soạn ra một "ĐỀ THI MỚI" tuân thủ NGHIÊM NGẶT 100% các quy tắc sau:
+
+[PHẦN I: ĐỀ THI TRẮC NGHIỆM]
+Tuyệt đối chỉ in ra nội dung đề thi trong phần này. KHÔNG kèm theo đáp án, KHÔNG giải thích sau câu hỏi.
+1. CẤU TRÚC VÀ MỨC ĐỘ:
+- Tương đương độ khó, độ dài và số lượng từ của từng bài trong đề mẫu.
+- Khác hoàn toàn về nội dung, nhưng giữ nguyên thứ tự các phần/cấu trúc.
+- Phân bổ đáp án: Dàn đều phương án đúng (A, B, C, D mỗi loại chiếm khoảng 25%).
+
+2. ĐỊNH DẠNG PHƯƠNG ÁN TRẢ LỜI:
+- Phương án ngắn (1-2 từ): Nằm trên cùng 1 hàng, cách nhau bằng Tab đều đặn. (A. __ \\t B. __ \\t C. __ \\t D. __)
+- Phương án trung bình/dài: Sắp xếp thành 2 hàng (2 phương án/hàng) cách nhau đều đặn.
+
+3. RÀNG BUỘC BÀI ĐỌC (KHÔNG TỰ BỊA / NO HALLUCINATE):
+- Bắt buộc lấy và điều chỉnh (adapted from) từ các nguồn tiếng Anh uy tín có thật (BBC, CNN, National Geographic, giáo trình...). Ưu tiên chủ đề sách giáo khoa.
+- Độ dài: Đọc điền từ (khoảng 100-150 từ/bài); Đọc hiểu (khoảng 300-400 từ/bài).
+- Trích dẫn: Ghi rõ nguồn trong ngoặc đơn nghiêng ngay sau khi kết thúc văn bản bài đọc. Ví dụ: (Adapted from [Nguồn])
+- Tuân thủ chính xác các dạng câu hỏi của bài đọc mẫu.
+
+4. ĐỊNH DẠNG CÂU HỎI ĐỌC HIỂU:
+- Bắt buộc in đậm (Bold) trực tiếp vào đoạn văn đọc hiểu đối với:
+  + Từ vựng được hỏi đồng nghĩa/trái nghĩa.
+  + Đại từ tham chiếu được hỏi.
+  + Các từ, cụm từ được hỏi nằm trong câu hỏi.
+  + Toàn bộ câu/mệnh đề được hỏi ý chính/paraphrase.
+- Định dạng 4 phương án cho câu đọc hiểu: Phải có độ dài tương đương nhau (chênh lệch tối đa 3-4 từ), viết thành câu hoàn chỉnh nếu hỏi về nội dung.
+
+---
+[PHẦN II: ĐÁP ÁN VÀ GIẢI THÍCH CHI TIẾT]
+Phần này phải được đặt tách biệt hoàn toàn ở cuối cùng, sau khi kết thúc toàn bộ Đề thi.
+Cấu trúc phần này:
+- Bảng đáp án ngắn gọn (ví dụ: 1A, 2B, 3C...)
+- Giải thích chi tiết cho từng câu (Tại sao đúng, tại sao sai, dịch nghĩa nếu cần).`;
+
 
 function checkLicenseStatus() {
     const isActivated = localStorage.getItem('claude_exam_activated') === 'true';
@@ -117,57 +165,49 @@ function checkLicenseStatus() {
     if (isActivated) {
         badge.style.display = 'inline-block';
         badge.style.background = '#16a34a';
-        badge.textContent = '✓ Bản Quyền Vĩnh Viễn';
+        badge.textContent = '✓ Bản Quyền API Vĩnh Viễn';
         actWrap.style.display = 'none';
         btnGen.disabled = false;
-        btnGen.innerHTML = "🚀 BẮT ĐẦU BIÊN SOẠN ĐỀ MỚI";
+        btnGen.innerHTML = "🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API";
     } else {
         const remaining = MAX_TRIALS - trialCount;
         badge.style.display = 'inline-block';
         
         if (remaining > 0) {
-            badge.textContent = `Dùng thử: ${remaining}/${MAX_TRIALS} lần`;
+            badge.textContent = `API Dùng thử: ${remaining}/${MAX_TRIALS} lần`;
             actWrap.style.display = 'none';
             btnGen.disabled = false;
         } else {
             badge.style.background = '#dc2626';
-            badge.textContent = `Đã hết lượt dùng thử`;
+            badge.textContent = `Đã hết lượt API tự động`;
             actWrap.style.display = 'block';
             btnGen.disabled = true;
-            btnGen.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT BẢN QUYỀN ĐỂ TIẾP TỤC";
+            btnGen.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT ĐỂ DÙNG API TỰ ĐỘNG";
         }
     }
 }
 
 function activateKey() {
     const inputKey = document.getElementById('inpLicenseKey').value.trim().toUpperCase();
-    
     if (inputKey.length !== 12) {
         alert("Lỗi: Key kích hoạt phải bao gồm ĐÚNG 12 ký tự. Vui lòng kiểm tra lại!");
         return;
     }
-
     if (inputKey === VALID_KEY) {
         localStorage.setItem('claude_exam_activated', 'true');
-        alert("🎉 Chúc mừng! Kích hoạt bản quyền vĩnh viễn thành công.");
+        alert("🎉 Chúc mừng! Kích hoạt bản quyền API vĩnh viễn thành công.");
         checkLicenseStatus();
     } else {
         alert("❌ Key kích hoạt không chính xác!");
     }
 }
 
-// ==========================================
-// KHỞI TẠO DỮ LIỆU KHI TẢI TRANG
-// ==========================================
 window.onload = () => {
     checkLicenseStatus();
     const savedKey = localStorage.getItem('claude_api_key');
     if(savedKey) document.getElementById('inpApiKey').value = savedKey;
 };
 
-// ==========================================
-// XỬ LÝ ĐỌC FILE (DOCX, TXT)
-// ==========================================
 function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -205,48 +245,27 @@ function showStatus(msg, type) {
     box.textContent = msg;
 }
 
-// ==========================================
-// SYSTEM PROMPT CỨNG
-// ==========================================
-const SYSTEM_PROMPT = `Bạn là một chuyên gia khảo thí và biên soạn đề thi Tiếng Anh cấp cao. 
-Nhiệm vụ của bạn là phân tích "ĐỀ MẪU" do người dùng cung cấp và biên soạn ra một "ĐỀ THI MỚI" tuân thủ NGHIÊM NGẶT 100% các quy tắc sau:
+// Hàm sinh Prompt Miễn Phí (Dành cho web Claude.ai)
+function generateFreePrompt() {
+    const inputText = document.getElementById('inpText').value.trim();
+    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên trước!");
 
-[PHẦN I: ĐỀ THI TRẮC NGHIỆM]
-Tuyệt đối chỉ in ra nội dung đề thi trong phần này. KHÔNG kèm theo đáp án, KHÔNG giải thích sau câu hỏi.
-1. CẤU TRÚC VÀ MỨC ĐỘ:
-- Tương đương độ khó, độ dài và số lượng từ của từng bài trong đề mẫu.
-- Khác hoàn toàn về nội dung, nhưng giữ nguyên thứ tự các phần/cấu trúc.
-- Phân bổ đáp án: Dàn đều phương án đúng (A, B, C, D mỗi loại chiếm khoảng 25%).
+    const finalPrompt = `${SYSTEM_PROMPT}\n\n=== DƯỚI ĐÂY LÀ ĐỀ MẪU CỦA TÔI ===\n\n${inputText}`;
+    
+    // Copy to clipboard
+    const tempTextArea = document.createElement("textarea");
+    tempTextArea.value = finalPrompt;
+    document.body.appendChild(tempTextArea);
+    tempTextArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempTextArea);
 
-2. ĐỊNH DẠNG PHƯƠNG ÁN TRẢ LỜI:
-- Phương án ngắn (1-2 từ): Nằm trên cùng 1 hàng, cách nhau bằng Tab đều đặn. (A. __ \\t B. __ \\t C. __ \\t D. __)
-- Phương án trung bình/dài: Sắp xếp thành 2 hàng (2 phương án/hàng) cách nhau đều đặn.
+    alert("🎉 THÀNH CÔNG! Đã copy Lệnh tạo đề thi vào bộ nhớ tạm.\n\nBây giờ hãy mở một Tab mới, truy cập trang claude.ai (đăng nhập bằng Gmail miễn phí) và DÁN lệnh này vào ô chat nhé!");
+    window.open("https://claude.ai", "_blank");
+}
 
-3. RÀNG BUỘC BÀI ĐỌC (KHÔNG TỰ BỊA / NO HALLUCINATE):
-- Bắt buộc lấy và điều chỉnh (adapted from) từ các nguồn tiếng Anh uy tín có thật (BBC, CNN, National Geographic, giáo trình...). Ưu tiên chủ đề sách giáo khoa.
-- Độ dài: Đọc điền từ (khoảng 100-150 từ/bài); Đọc hiểu (khoảng 300-400 từ/bài).
-- Trích dẫn: Ghi rõ nguồn trong ngoặc đơn nghiêng ngay sau khi kết thúc văn bản bài đọc. Ví dụ: (Adapted from [Nguồn])
-- Tuân thủ chính xác các dạng câu hỏi của bài đọc mẫu.
-
-4. ĐỊNH DẠNG CÂU HỎI ĐỌC HIỂU:
-- Bắt buộc in đậm (Bold) trực tiếp vào đoạn văn đọc hiểu đối với:
-  + Từ vựng được hỏi đồng nghĩa/trái nghĩa.
-  + Đại từ tham chiếu được hỏi.
-  + Các từ, cụm từ được hỏi nằm trong câu hỏi.
-  + Toàn bộ câu/mệnh đề được hỏi ý chính/paraphrase.
-- Định dạng 4 phương án cho câu đọc hiểu: Phải có độ dài tương đương nhau (chênh lệch tối đa 3-4 từ), viết thành câu hoàn chỉnh nếu hỏi về nội dung.
-
----
-[PHẦN II: ĐÁP ÁN VÀ GIẢI THÍCH CHI TIẾT]
-Phần này phải được đặt tách biệt hoàn toàn ở cuối cùng, sau khi kết thúc toàn bộ Đề thi.
-Cấu trúc phần này:
-- Bảng đáp án ngắn gọn (ví dụ: 1A, 2B, 3C...)
-- Giải thích chi tiết cho từng câu (Tại sao đúng, tại sao sai, dịch nghĩa nếu cần).`;
-
-// ==========================================
-// GỌI API SINH ĐỀ
-// ==========================================
-async function generateExam() {
+// Hàm gọi API trả phí tự động
+async function generateExamAPI() {
     const isActivated = localStorage.getItem('claude_exam_activated') === 'true';
     let trialCount = parseInt(localStorage.getItem('claude_exam_trials') || '0');
 
@@ -258,16 +277,16 @@ async function generateExam() {
     const apiKey = document.getElementById('inpApiKey').value.trim();
     const inputText = document.getElementById('inpText').value.trim();
     
-    if(!apiKey) return alert("Vui lòng nhập API Key của Claude!");
+    if(!apiKey) return alert("Vui lòng nhập API Key của Anthropic!");
     if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên!");
 
     localStorage.setItem('claude_api_key', apiKey);
 
     const btn = document.getElementById('btnGenerate');
     btn.disabled = true;
-    btn.innerHTML = "⏳ Đang kết nối tới Claude AI... Vui lòng đợi (có thể mất 1-2 phút)";
+    btn.innerHTML = "⏳ Đang kết nối tới API Claude... Vui lòng đợi";
     document.getElementById('outputWrap').style.display = 'none';
-    showStatus("Hệ thống đang phân tích đề mẫu và sinh đề mới. Vui lòng không đóng trình duyệt...", "loading");
+    showStatus("Hệ thống đang phân tích đề mẫu và sinh đề mới qua API. Vui lòng không đóng trình duyệt...", "loading");
 
     try {
         const targetUrl = 'https://api.anthropic.com/v1/messages';
@@ -305,9 +324,8 @@ async function generateExam() {
 
         document.getElementById('outText').value = generatedText;
         document.getElementById('outputWrap').style.display = 'block';
-        showStatus("Hoàn tất! Đề thi mới đã được tạo thành công.", "success");
+        showStatus("Hoàn tất! Đề thi tự động đã được tạo thành công.", "success");
 
-        // Ghi nhận lượt dùng thử nếu chưa kích hoạt
         if (!isActivated) {
             trialCount++;
             localStorage.setItem('claude_exam_trials', trialCount.toString());
@@ -321,10 +339,10 @@ async function generateExam() {
         showStatus("Lỗi: " + error.message, "error");
     } finally {
         if (localStorage.getItem('claude_exam_activated') !== 'true' && parseInt(localStorage.getItem('claude_exam_trials') || '0') >= MAX_TRIALS) {
-            btn.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT BẢN QUYỀN ĐỂ TIẾP TỤC";
+            btn.innerHTML = "🔒 VUI LÒNG KÍCH HOẠT BẢN QUYỀN ĐỂ DÙNG API TỰ ĐỘNG";
         } else {
             btn.disabled = false;
-            btn.innerHTML = "🚀 BẮT ĐẦU BIÊN SOẠN ĐỀ MỚI";
+            btn.innerHTML = "🚀 BẮT ĐẦU TẠO ĐỀ TỰ ĐỘNG BẰNG API";
         }
     }
 }
