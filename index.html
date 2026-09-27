@@ -37,11 +37,29 @@ textarea{resize:vertical;min-height:200px}
 .status-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
 #outputWrap{display:none}
 .note{font-size:13px;color:var(--mut);background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--line);margin-top:8px}
-
 .divider { display: flex; align-items: center; text-align: center; margin: 30px 0; color: var(--mut); font-weight: 600; font-size: 13px; text-transform: uppercase; }
 .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
 .divider:not(:empty)::before { margin-right: 15px; }
 .divider:not(:empty)::after { margin-left: 15px; }
+
+/* Styling for rich text rendering area */
+#renderArea {
+    min-height: 500px;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    font-family: 'Times New Roman', serif;
+    font-size: 16pt;
+    line-height: 1.5;
+    outline: none;
+    white-space: pre-wrap;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+#renderArea:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(139,92,246,.15);
+}
 
 @media (max-width: 768px) {
     .grid-2 { grid-template-columns: 1fr; }
@@ -55,7 +73,7 @@ textarea{resize:vertical;min-height:200px}
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
         <h1 style="color:#fff;font-size:28px">AI Exam Generator (Claude & Gemini)</h1>
     </div>
-    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (Bịa nguồn). Mỗi lần sử dụng sẽ tốn 1 lượt dùng.</div>
+    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (Bịa nguồn). Mỗi lần load trang hoặc chạy lệnh được tính là 1 lần sử dụng.</div>
   </div>
 
   <div class="card">
@@ -76,7 +94,6 @@ textarea{resize:vertical;min-height:200px}
     <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:24px; margin-bottom:24px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:10px;">
             <h3 style="margin:0; color:#166534;">Công cụ Miễn Phí (Tạo Lệnh Bán Tự Động)</h3>
-            <span id="freeTrialBadge" style="background:#f59e0b; color:#fff; padding:4px 12px; border-radius:999px; font-size:12.5px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.05)"></span>
         </div>
         <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ đóng gói Đề mẫu & Quy tắc thành một Lệnh chuẩn, tự động copy và mở web AI. Việc của bạn chỉ là bấm <b>Ctrl + V</b> vào ô chat.</p>
 
@@ -119,7 +136,7 @@ textarea{resize:vertical;min-height:200px}
     
     <!-- Ô nhập Pass Mở khóa -->
     <div id="unlockWrap" style="display:none; margin-bottom:16px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px;">
-        <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hệ thống. Vui lòng đăng nhập mật khẩu để dùng tiếp:</label>
+        <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hết lượt. Vui lòng đăng nhập mật khẩu để tiếp tục 1 lần dùng:</label>
         <div style="display:flex; gap:10px; flex-wrap:wrap">
             <input type="password" id="inpUnlockPassword" placeholder="Mật khẩu..." style="flex:1; border-color:#fde047;">
             <button class="btn" style="background:#ca8a04; color:#fff; border:none;" onclick="unlockSystem()">Đăng Nhập</button>
@@ -130,20 +147,17 @@ textarea{resize:vertical;min-height:200px}
 
   <div id="statusBox"></div>
 
-  <!-- VÙNG KẾT QUẢ VÀ XUẤT FILE ĐỀ THI -->
+  <!-- VÙNG KẾT QUẢ ĐƯỢC THIẾT KẾ DẠNG VĂN BẢN TRỰC QUAN -->
   <div class="card" id="outputWrap" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-      <h2 id="outputTitle" style="margin:0;color:var(--ok);font-size:20px;">✅ Lệnh Đã Tạo Xong (Dán Đè Kết Quả Của AI Vào Đây)</h2>
+      <h2 style="margin:0;color:var(--ok);font-size:20px;">✅ Kết Quả Đề Thi</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-outline sm" onclick="copyResult()">📋 Copy Tất Cả</button>
+        <button class="btn btn-outline sm" style="background:#f0fdf4; border-color:#16a34a; color:#16a34a;" onclick="pasteFromClipboard()">📥 Dán Kết Quả Từ AI</button>
+        <button class="btn primary sm" onclick="copyResult()">📋 Copy Toàn Bộ</button>
       </div>
     </div>
     
-    <div id="outputGuide" style="font-size:13.5px;color:var(--mut);margin-bottom:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px dashed var(--line)">
-        <i>* Lệnh đã được sao chép. Bạn hãy dán (Ctrl+V) vào Claude/Gemini.<br>
-    </div>
-    
-    <textarea id="outText" placeholder="Kết quả tạo đề sẽ hiện ở đây, hoặc bạn dán kết quả thủ công vào đây..." style="min-height:500px;font-family:'Times New Roman',serif;font-size:16px"></textarea>
+    <div id="renderArea" contenteditable="true" placeholder="Kết quả tạo đề sẽ hiển thị dưới dạng văn bản tại đây..." tabindex="0"></div>
   </div>
 </div>
 
@@ -244,7 +258,6 @@ function markSystemUsed() {
 }
 
 window.onload = () => {
-    // Mỗi khi reload trang, coi như 1 lần sử dụng mới nếu chưa reset
     if (!sessionStorage.getItem('ai_system_used_reload_flag')) {
         sessionStorage.setItem('ai_system_used_reload_flag', 'true');
     } else {
@@ -300,7 +313,7 @@ function showStatus(msg, type) {
 }
 
 // ==========================================
-// CÁCH 1 & CÁCH 3: TẠO PROMPT COPY VÀ HIỂN THỊ VÀO TEXTAREA
+// CÁCH 1 & CÁCH 3: TẠO PROMPT COPY
 // ==========================================
 function generateFreePrompt(aiType) {
     const inputText = document.getElementById('inpText').value.trim();
@@ -308,13 +321,10 @@ function generateFreePrompt(aiType) {
 
     const finalPrompt = `${SYSTEM_PROMPT}\n\n=== DƯỚI ĐÂY LÀ ĐỀ MẪU CỦA TÔI ===\n\n${inputText}`;
     
-    // In nội dung vào ô kết quả
-    document.getElementById('outText').value = finalPrompt;
-    document.getElementById('outputTitle').innerHTML = "⏳ Lệnh Đã Tạo Xong (Dán Đè Kết Quả Của AI Vào Đây)";
     document.getElementById('outputWrap').style.display = 'block';
+    document.getElementById('renderArea').innerText = ""; 
     document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
 
-    // Copy to clipboard
     const tempTextArea = document.createElement("textarea");
     tempTextArea.value = finalPrompt;
     document.body.appendChild(tempTextArea);
@@ -325,10 +335,10 @@ function generateFreePrompt(aiType) {
     markSystemUsed();
 
     if (aiType === 'claude') {
-        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY SẴN VÀO CHUỘT!\n\nTrang web Claude sẽ được mở ngay sau đây.\n👉 Thầy/Cô chỉ cần bấm [Ctrl + V] vào ô chat và nhấn Enter để Claude tự động làm việc.");
+        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY SẴN VÀO CHUỘT!\n\nTrang web Claude sẽ được mở ngay sau đây.\n👉 Bạn chỉ cần bấm [Ctrl + V] vào ô chat và nhấn Enter. Khi Claude trả kết quả, copy và bấm 'Dán Kết Quả Từ AI' trên phần mềm.");
         window.open("https://claude.ai/new", "_blank");
     } else if (aiType === 'gemini') {
-        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY SẴN VÀO CHUỘT!\n\nTrang web Gemini sẽ được mở ngay sau đây.\n👉 Thầy/Cô chỉ cần bấm [Ctrl + V] vào ô chat và nhấn Enter để Gemini tự động làm việc.");
+        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY SẴN VÀO CHUỘT!\n\nTrang web Gemini sẽ được mở ngay sau đây.\n👉 Bạn chỉ cần bấm [Ctrl + V] vào ô chat và nhấn Enter. Khi Gemini trả kết quả, copy và bấm 'Dán Kết Quả Từ AI' trên phần mềm.");
         window.open("https://gemini.google.com/app", "_blank");
     }
 }
@@ -343,7 +353,6 @@ async function generateAPI(aiType) {
     const btnClaude = document.getElementById('btnGenClaudeAPI');
     const btnGemini = document.getElementById('btnGenGeminiAPI');
 
-    document.getElementById('outputTitle').innerHTML = "✅ Lệnh Đã Tạo Xong (Dán Đè Kết Quả Của AI Vào Đây)";
     showStatus("Đang phân tích đề mẫu và sinh đề mới qua API. Vui lòng không đóng trình duyệt...", "loading");
 
     try {
@@ -383,7 +392,7 @@ async function generateAPI(aiType) {
             }
 
             const data = await response.json();
-            document.getElementById('outText').value = data.content[0].text;
+            document.getElementById('renderArea').innerText = data.content[0].text;
 
         } else if (aiType === 'gemini') {
             const apiKey = document.getElementById('inpGeminiKey').value.trim();
@@ -411,7 +420,7 @@ async function generateAPI(aiType) {
             }
 
             const data = await response.json();
-            document.getElementById('outText').value = data.candidates[0].content.parts[0].text;
+            document.getElementById('renderArea').innerText = data.candidates[0].content.parts[0].text;
         }
 
         document.getElementById('outputWrap').style.display = 'block';
@@ -428,14 +437,37 @@ async function generateAPI(aiType) {
     }
 }
 
-function copyResult() {
-    const text = document.getElementById('outText');
-    if (!text.value.trim()) return alert('Chưa có nội dung đề thi!');
-    text.select();
-    document.execCommand('copy');
-    alert('Đã copy toàn bộ nội dung đề thi vào bộ nhớ tạm!');
+// ==========================================
+// ĐỌC CLIPBOARD VÀ COPY KẾT QUẢ
+// ==========================================
+async function pasteFromClipboard() {
+    try {
+        const text = await navigator.clipboard.readText();
+        if(text) {
+            document.getElementById('renderArea').innerText = text;
+            showStatus("Đã tải dữ liệu vào khung hiển thị thành công!", "success");
+        } else {
+            alert("Bộ nhớ tạm đang trống!");
+        }
+    } catch (err) {
+        alert('Trình duyệt của bạn chặn quyền đọc dữ liệu Clipboard.\nVui lòng click chuột vào khung văn bản màu trắng bên dưới và bấm tổ hợp phím [Ctrl + V] để dán.');
+        document.getElementById('renderArea').focus();
+    }
 }
 
+function copyResult() {
+    const text = document.getElementById('renderArea').innerText;
+    if (!text.trim()) return alert('Chưa có nội dung đề thi!');
+    
+    const tempTextArea = document.createElement("textarea");
+    tempTextArea.value = text;
+    document.body.appendChild(tempTextArea);
+    tempTextArea.select();
+    document.execCommand("copy");
+    document.body.removeChild(tempTextArea);
+    
+    alert('Đã copy toàn bộ nội dung đề thi vào bộ nhớ tạm!');
+}
 </script>
 </body>
 </html>
