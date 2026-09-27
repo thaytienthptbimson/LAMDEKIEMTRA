@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Công Cụ Sinh Đề Thi Bằng AI (Claude & Gemini)</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+<!-- Thư viện xuất file Word (.docx) -->
+<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
 <style>
 :root{
   --bg:#f4f6fb;--card:#ffffff;--ink:#1e293b;--mut:#64748b;--line:#e2e8f0;
@@ -19,26 +20,27 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,sans-serif;ba
 h1{margin:0 0 8px;font-size:24px;color:var(--brand-dark)}
 .form-group{margin-bottom:20px}
 label{display:block;font-weight:600;margin-bottom:8px;font-size:14px}
-input[type=text],input[type=password],textarea{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:inherit;transition:.2s}
-input:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(139,92,246,.15)}
-textarea{resize:vertical;min-height:200px}
+input[type=text],input[type=password],textarea,select{width:100%;padding:12px;border:1.5px solid var(--line);border-radius:10px;font-family:inherit;font-size:inherit;transition:.2s}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(139,92,246,.15)}
+textarea{resize:vertical;min-height:180px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;background:var(--brand);color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;transition:.2s;font-size:15px}
 .btn:hover{background:var(--brand-dark)}
 .btn:disabled{opacity:.6;cursor:not-allowed;background:var(--mut)}
 .btn-outline{background:#fff;color:var(--brand);border:1.5px solid var(--brand)}
 .btn-outline:hover{background:var(--soft)}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.file-drop{border:2px dashed var(--brand);background:var(--soft);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:.2s}
-.file-drop:hover{background:#ede9fe}
-.file-drop input{display:none}
 #statusBox{display:none;padding:16px;border-radius:10px;margin-bottom:20px;font-weight:600;text-align:center}
 .status-loading{background:#fef08a;color:#854d0e;border:1px solid #fde047}
 .status-success{background:#dcfce7;color:#166534;border:1px solid #86efac}
 .status-error{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+.note{font-size:13px;color:var(--mut);background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--line);margin-top:8px}
 .divider { display: flex; align-items: center; text-align: center; margin: 30px 0; color: var(--mut); font-weight: 600; font-size: 13px; text-transform: uppercase; }
 .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--line); }
 .divider:not(:empty)::before { margin-right: 15px; }
 .divider:not(:empty)::after { margin-left: 15px; }
+
+.stat-bar-bg { width: 100%; background: #e2e8f0; border-radius: 999px; height: 12px; overflow: hidden; margin-top: 4px; }
+.stat-bar-fill { height: 100%; transition: width 0.5s ease; }
 
 @media (max-width: 768px) {
     .grid-2 { grid-template-columns: 1fr; }
@@ -50,32 +52,31 @@ textarea{resize:vertical;min-height:200px}
 <div class="container">
   <div class="card" style="background:linear-gradient(135deg, #7c3aed, #0284c7); color:#fff; padding:40px 32px">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
-        <h1 style="color:#fff;font-size:28px">AI Exam Generator (Claude & Gemini)</h1>
+        <h1 style="color:#fff;font-size:28px">AI Exam Generator Pro</h1>
     </div>
-    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (Bịa nguồn). Mỗi lần load trang hoặc chạy lệnh được tính là 1 lần sử dụng.</div>
+    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và sinh đề tương đương. Mỗi lần load trang hoặc chạy lệnh được tính là 1 lần sử dụng.</div>
   </div>
 
   <div class="card">
     <div class="form-group">
-      <label>1. Nguồn Đề Thi Mẫu (Bắt buộc)</label>
-      <div class="grid-2">
-        <label class="file-drop" id="dropZone">
-          <div style="font-size:24px;margin-bottom:8px">📁</div>
-          <div>Bấm để chọn file <b>.docx</b> hoặc <b>.txt</b></div>
-          <input type="file" id="inpFile" accept=".docx,.txt" onchange="handleFileSelect(event)">
-        </label>
-        <div style="display:flex;align-items:center;justify-content:center;color:var(--mut);font-weight:600">HOẶC DÁN TRỰC TIẾP DƯỚI ĐÂY</div>
-      </div>
-      <textarea id="inpText" placeholder="Dán nội dung đề mẫu vào đây..." style="margin-top:16px"></textarea>
+      <label>1. Tùy chọn phạm vi sinh đề (Mới)</label>
+      <select id="examScope">
+          <option value="full">Sinh toàn bộ đề thi (50 câu)</option>
+          <option value="grammar">Chỉ sinh phần Trắc nghiệm Từ vựng & Ngữ pháp</option>
+          <option value="reading">Chỉ sinh các bài Đọc điền từ & Đọc hiểu</option>
+      </select>
+      <div class="note">💡 <b>Mẹo:</b> Chia nhỏ phạm vi giúp AI tập trung hơn, viết bài đọc sâu sắc hơn và không bị lỗi giới hạn ký tự.</div>
     </div>
 
-    <!-- TẠO LỆNH THỦ CÔNG (MIỄN PHÍ) -->
-    <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:24px; margin-bottom:24px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:10px;">
-            <h3 style="margin:0; color:#166534;">Công cụ Miễn Phí (Tạo Lệnh Bán Tự Động)</h3>
-        </div>
-        <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ đóng gói Đề mẫu & Quy tắc thành một Lệnh chuẩn, tự động copy và mở web AI. Việc của bạn chỉ là bấm <b>Ctrl + V</b> vào ô chat.</p>
+    <div class="form-group">
+      <label>2. Dán Nội Dung Đề Mẫu</label>
+      <textarea id="inpText" placeholder="Dán nội dung đề thi mẫu của bạn vào đây..."></textarea>
+    </div>
 
+    <!-- TẠO LỆNH THỦ CÔNG -->
+    <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:12px; padding:24px; margin-bottom:24px;">
+        <h3 style="margin:0 0 16px 0; color:#166534;">Công cụ Miễn Phí (Tạo Lệnh Tự Động Copy)</h3>
+        
         <div class="grid-2">
             <button class="btn" id="btnGenClaudeFree" style="background:#16a34a; border-color:#16a34a; font-size:14.5px" onclick="generateFreePrompt('claude')">
                 📋 CÁCH 1: LỆNH CHO CLAUDE
@@ -86,34 +87,34 @@ textarea{resize:vertical;min-height:200px}
         </div>
     </div>
 
-    <div class="divider">Chạy Tự Động Toàn Diện (Yêu cầu API Key)</div>
+    <div class="divider">Chạy Tự Động Bằng API (Yêu cầu API Key)</div>
 
-    <!-- TẠO ĐỀ TỰ ĐỘNG BẰNG API -->
+    <!-- TẠO ĐỀ BẰNG API -->
     <div style="background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:24px;">
         <h3 style="margin-top:0; color:var(--ink); margin-bottom:16px;">Công cụ Tự Động (Tài khoản API)</h3>
         
         <div class="grid-2">
             <!-- CÁCH 2: CLAUDE API -->
             <div style="background:#fff; border:1px solid var(--line); padding:16px; border-radius:10px;">
-                <label>🔑 API Key Claude (Anthropic)</label>
+                <label>🔑 API Key Claude</label>
                 <input type="password" id="inpClaudeKey" placeholder="sk-ant-api03-..." style="margin-bottom:12px">
                 <button class="btn" id="btnGenClaudeAPI" style="width:100%; background:var(--brand); font-size:14px" onclick="generateAPI('claude')">
-                    🚀 CÁCH 2: CLAUDE API
+                    🚀 CÁCH 2: CHẠY CLAUDE API
                 </button>
             </div>
 
             <!-- CÁCH 4: GEMINI API -->
             <div style="background:#fff; border:1px solid var(--line); padding:16px; border-radius:10px;">
-                <label>🔑 API Key Gemini (Google)</label>
+                <label>🔑 API Key Gemini</label>
                 <input type="password" id="inpGeminiKey" placeholder="AIzaSy..." style="margin-bottom:12px">
                 <button class="btn" id="btnGenGeminiAPI" style="width:100%; background:var(--gemini); font-size:14px" onclick="generateAPI('gemini')">
-                    🚀 CÁCH 4: GEMINI API
+                    🚀 CÁCH 4: CHẠY GEMINI API
                 </button>
             </div>
         </div>
     </div>
     
-    <!-- Ô nhập Pass Mở khóa -->
+    <!-- Ô nhập Pass Mở khóa (Ẩn đi cho đến khi dùng hết 1 lượt) -->
     <div id="unlockWrap" style="display:none; margin-bottom:16px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px;">
         <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hết lượt. Vui lòng đăng nhập mật khẩu để tiếp tục 1 lần dùng:</label>
         <div style="display:flex; gap:10px; flex-wrap:wrap">
@@ -125,32 +126,78 @@ textarea{resize:vertical;min-height:200px}
   </div>
 
   <div id="statusBox"></div>
+
+  <!-- TRỢ LÝ HẬU KỲ: XỬ LÝ FORMAT & KIỂM ĐỊNH TỶ LỆ -->
+  <div class="divider">🛠️ Trợ Lý Hậu Kỳ & Kiểm Định File Word</div>
+  <div class="card" style="background:#f0f9ff; border-color:#bae6fd;">
+      <h3 style="margin-top:0; color:#0369a1;">Dán kết quả AI vào đây để xử lý</h3>
+      <p style="font-size:13.5px; color:#0c4a6e; margin-top:0;">Bước này giúp kiểm tra AI có phân bổ đều đáp án A-B-C-D không và chuyển đổi các ký tự `**` thành chữ in đậm thực sự trong Microsoft Word.</p>
+      
+      <textarea id="postProcessInput" placeholder="Sau khi AI làm xong, copy toàn bộ nội dung của AI và dán vào đây..."></textarea>
+      
+      <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap">
+          <button class="btn" style="background:#0f172a; flex:1" onclick="processAIResult()">🔍 Phân Tích & Chuẩn Hóa Word</button>
+          <button class="btn primary" id="btnDownloadWord" style="display:none; flex:1" onclick="downloadDocx()">📄 Tải Xuống File Word (.docx)</button>
+      </div>
+
+      <div id="statsBox" style="display:none; margin-top:20px; padding:20px; background:#fff; border-radius:8px; border:1px solid #e2e8f0; box-shadow:0 2px 4px rgba(0,0,0,0.02)">
+          <h4 style="margin:0 0 16px 0; color:var(--ink)">Thống Kê Tỷ Lệ Phân Bổ Đáp Án (Dựa trên phần Giải thích)</h4>
+          <div class="grid-2">
+              <div>
+                  <div style="font-size:14px; font-weight:600">Đáp án A (<span id="countA">0</span>)</div>
+                  <div class="stat-bar-bg"><div id="barA" class="stat-bar-fill" style="background:#ef4444; width:0%"></div></div>
+              </div>
+              <div>
+                  <div style="font-size:14px; font-weight:600">Đáp án B (<span id="countB">0</span>)</div>
+                  <div class="stat-bar-bg"><div id="barB" class="stat-bar-fill" style="background:#3b82f6; width:0%"></div></div>
+              </div>
+              <div>
+                  <div style="font-size:14px; font-weight:600">Đáp án C (<span id="countC">0</span>)</div>
+                  <div class="stat-bar-bg"><div id="barC" class="stat-bar-fill" style="background:#10b981; width:0%"></div></div>
+              </div>
+              <div>
+                  <div style="font-size:14px; font-weight:600">Đáp án D (<span id="countD">0</span>)</div>
+                  <div class="stat-bar-bg"><div id="barD" class="stat-bar-fill" style="background:#f59e0b; width:0%"></div></div>
+              </div>
+          </div>
+          <div id="statAlert" style="margin-top:16px; font-size:13px; font-weight:600;"></div>
+      </div>
+  </div>
+
 </div>
 
 <script>
 // ==========================================
-// CẤU HÌNH VÀ SYSTEM PROMPT
+// CẤU HÌNH VÀ BẢO MẬT
 // ==========================================
 const VALID_PASSWORD = "phamtien17081983@";
 
-const SYSTEM_PROMPT = `Bạn là một chuyên gia khảo thí và biên soạn đề thi Tiếng Anh cấp cao. 
-Nhiệm vụ của bạn là phân tích "ĐỀ MẪU" do người dùng cung cấp và biên soạn ra một "ĐỀ THI MỚI" tuân thủ NGHIÊM NGẶT 100% các quy tắc sau:
+function getSystemPrompt() {
+    const scope = document.getElementById('examScope').value;
+    let scopeText = "";
+    if (scope === 'full') scopeText = "SINH TOÀN BỘ ĐỀ THI (Khoảng 50 câu).";
+    if (scope === 'grammar') scopeText = "CHỈ SINH PHẦN TRẮC NGHIỆM TỪ VỰNG VÀ NGỮ PHÁP.";
+    if (scope === 'reading') scopeText = "CHỈ SINH CÁC BÀI ĐỌC ĐIỀN TỪ VÀ ĐỌC HIỂU.";
 
+    return `Bạn là một chuyên gia khảo thí và biên soạn đề thi Tiếng Anh cấp cao. 
+Nhiệm vụ của bạn là phân tích "ĐỀ MẪU" do người dùng cung cấp và biên soạn ra một "ĐỀ THI MỚI". 
+
+YÊU CẦU PHẠM VI XỬ LÝ LẦN NÀY: **${scopeText}**
+
+YÊU CẦU CHUNG:
 [PHẦN I: ĐỀ THI TRẮC NGHIỆM]
 Tuyệt đối chỉ in ra nội dung đề thi trong phần này. KHÔNG kèm theo đáp án, KHÔNG giải thích sau câu hỏi.
 1. CẤU TRÚC VÀ MỨC ĐỘ:
-- Tương đương độ khó, độ dài và số lượng từ của từng bài trong đề mẫu.
-- Khác hoàn toàn về nội dung, nhưng giữ nguyên thứ tự các phần/cấu trúc.
-- Phân bổ đáp án: Dàn đều phương án đúng (A, B, C, D mỗi loại chiếm khoảng 25%).
+- Tương đương độ khó, độ dài và số lượng từ của từng bài trong đề mẫu. Khác hoàn toàn về nội dung.
+- Dàn đều phương án đúng (A, B, C, D mỗi loại xấp xỉ 25%).
 
 2. ĐỊNH DẠNG PHƯƠNG ÁN TRẢ LỜI:
-- Phương án ngắn (1-2 từ): Nằm trên cùng 1 hàng, cách nhau bằng Tab đều đặn. (A. __ \t B. __ \t C. __ \t D. __)
+- Phương án ngắn (1-2 từ): Nằm trên cùng 1 hàng, cách nhau bằng Tab đều đặn.
 - Phương án trung bình/dài: Sắp xếp thành 2 hàng (2 phương án/hàng) cách nhau đều đặn.
 
 3. RÀNG BUỘC BÀI ĐỌC (KHÔNG TỰ BỊA / NO HALLUCINATE):
-- Bắt buộc lấy và điều chỉnh (adapted from) từ các nguồn tiếng Anh uy tín có thật (BBC, CNN, National Geographic, giáo trình...). Ưu tiên chủ đề sách giáo khoa.
-- Độ dài: Đọc điền từ (khoảng 100-150 từ/bài); Đọc hiểu (khoảng 300-400 từ/bài).
-- Trích dẫn: Ghi rõ nguồn trong ngoặc đơn nghiêng ngay sau khi kết thúc văn bản bài đọc. Ví dụ: (Adapted from [Nguồn])
+- Bắt buộc lấy và điều chỉnh (adapted from) từ các nguồn uy tín (BBC, CNN, National Geographic...). Ưu tiên chủ đề sách giáo khoa.
+- Trích dẫn: Ghi rõ nguồn trong ngoặc đơn ngay sau khi kết thúc văn bản bài đọc.
 - Tuân thủ chính xác các dạng câu hỏi của bài đọc mẫu.
 
 4. ĐỊNH DẠNG CÂU HỎI VÀ ĐOẠN VĂN ĐỌC HIỂU:
@@ -158,16 +205,15 @@ Tuyệt đối chỉ in ra nội dung đề thi trong phần này. KHÔNG kèm t
   + Từ vựng được hỏi đồng nghĩa/trái nghĩa.
   + Đại từ tham chiếu được hỏi.
   + Các từ, cụm từ được hỏi nằm trong câu hỏi.
-  + Toàn bộ câu/mệnh đề được hỏi ý chính/paraphrase.
-- TRONG NỘI DUNG CÂU HỎI: Phải dùng Markdown in đậm (**word**) cho từ/cụm từ được trích dẫn để hỏi. Ví dụ: The word "**XYZ**" in paragraph 1 is closest in meaning to...
-- Định dạng 4 phương án cho câu đọc hiểu: Phải có độ dài tương đương nhau (chênh lệch tối đa 3-4 từ), viết thành câu hoàn chỉnh nếu hỏi về nội dung.
+  + Toàn bộ câu/mệnh đề được hỏi ý chính.
+- TRONG NỘI DUNG CÂU HỎI: Phải dùng Markdown in đậm (**word**) cho từ/cụm từ được trích dẫn để hỏi.
 
 ---
 [PHẦN II: ĐÁP ÁN VÀ GIẢI THÍCH CHI TIẾT]
-Phần này phải được đặt tách biệt hoàn toàn ở cuối cùng, sau khi kết thúc toàn bộ Đề thi.
-Cấu trúc phần này:
-- Bảng đáp án ngắn gọn (ví dụ: 1A, 2B, 3C...)
-- Giải thích chi tiết cho từng câu (Tại sao đúng, tại sao sai, dịch nghĩa nếu cần).`;
+Phải được đặt tách biệt hoàn toàn ở cuối cùng.
+- Bảng đáp án tổng hợp (Ví dụ: 1. A, 2. B, 3. C)
+- Giải thích chi tiết cho từng câu.`;
+}
 
 // ==========================================
 // KIỂM TRA TRẠNG THÁI SỬ DỤNG
@@ -183,26 +229,16 @@ function checkLicenseStatus() {
 
     if (hasUsed) {
         unlockWrap.style.display = 'block';
-        btnGenC.disabled = true;
-        btnGenG.disabled = true;
-        btnAPI_C.disabled = true;
-        btnAPI_G.disabled = true;
-        
-        btnGenC.innerHTML = "🔒 ĐÃ KHÓA CÁCH 1";
-        btnGenG.innerHTML = "🔒 ĐÃ KHÓA CÁCH 3";
-        btnAPI_C.innerHTML = "🔒 ĐÃ KHÓA CÁCH 2";
-        btnAPI_G.innerHTML = "🔒 ĐÃ KHÓA CÁCH 4";
+        btnGenC.disabled = true; btnGenG.disabled = true;
+        btnAPI_C.disabled = true; btnAPI_G.disabled = true;
+        btnGenC.innerHTML = "🔒 ĐÃ KHÓA CÁCH 1"; btnGenG.innerHTML = "🔒 ĐÃ KHÓA CÁCH 3";
+        btnAPI_C.innerHTML = "🔒 ĐÃ KHÓA CÁCH 2"; btnAPI_G.innerHTML = "🔒 ĐÃ KHÓA CÁCH 4";
     } else {
         unlockWrap.style.display = 'none';
-        btnGenC.disabled = false;
-        btnGenG.disabled = false;
-        btnAPI_C.disabled = false;
-        btnAPI_G.disabled = false;
-        
-        btnGenC.innerHTML = "📋 CÁCH 1: LỆNH CHO CLAUDE";
-        btnGenG.innerHTML = "📋 CÁCH 3: LỆNH CHO GEMINI";
-        btnAPI_C.innerHTML = "🚀 CÁCH 2: CLAUDE API";
-        btnAPI_G.innerHTML = "🚀 CÁCH 4: GEMINI API";
+        btnGenC.disabled = false; btnGenG.disabled = false;
+        btnAPI_C.disabled = false; btnAPI_G.disabled = false;
+        btnGenC.innerHTML = "📋 CÁCH 1: LỆNH CHO CLAUDE"; btnGenG.innerHTML = "📋 CÁCH 3: LỆNH CHO GEMINI";
+        btnAPI_C.innerHTML = "🚀 CÁCH 2: CLAUDE API"; btnAPI_G.innerHTML = "🚀 CÁCH 4: GEMINI API";
     }
 }
 
@@ -224,13 +260,11 @@ function markSystemUsed() {
 }
 
 window.onload = () => {
-    // Mỗi khi reload trang, coi như 1 lần sử dụng mới nếu chưa reset
     if (!sessionStorage.getItem('ai_system_used_reload_flag')) {
         sessionStorage.setItem('ai_system_used_reload_flag', 'true');
     } else {
          markSystemUsed();
     }
-    
     checkLicenseStatus();
     
     const savedC = localStorage.getItem('claude_api_key');
@@ -238,39 +272,6 @@ window.onload = () => {
     if(savedC) document.getElementById('inpClaudeKey').value = savedC;
     if(savedG) document.getElementById('inpGeminiKey').value = savedG;
 };
-
-// ==========================================
-// XỬ LÝ ĐỌC FILE (DOCX, TXT)
-// ==========================================
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const ext = file.name.split('.').pop().toLowerCase();
-    
-    if (ext === 'txt') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById('inpText').value = e.target.result;
-            showStatus("Đã tải xong file .txt", "success");
-        };
-        reader.readAsText(file);
-    } else if (ext === 'docx') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            mammoth.extractRawText({arrayBuffer: e.target.result})
-                .then(result => {
-                    document.getElementById('inpText').value = result.value;
-                    showStatus("Đã trích xuất văn bản từ file Word thành công!", "success");
-                })
-                .catch(err => showStatus("Lỗi đọc file DOCX: " + err.message, "error"));
-        };
-        reader.readAsArrayBuffer(file);
-    } else {
-        showStatus("Chỉ hỗ trợ file .txt hoặc .docx", "error");
-    }
-    event.target.value = ''; 
-}
 
 function showStatus(msg, type) {
     const box = document.getElementById('statusBox');
@@ -280,15 +281,14 @@ function showStatus(msg, type) {
 }
 
 // ==========================================
-// CÁCH 1 & CÁCH 3: TẠO PROMPT COPY
+// TẠO PROMPT (CÁCH 1 & 3)
 // ==========================================
 function generateFreePrompt(aiType) {
     const inputText = document.getElementById('inpText').value.trim();
-    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên trước!");
+    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu!");
 
-    const finalPrompt = `${SYSTEM_PROMPT}\n\n=== DƯỚI ĐÂY LÀ ĐỀ MẪU CỦA TÔI ===\n\n${inputText}`;
+    const finalPrompt = `${getSystemPrompt()}\n\n=== DƯỚI ĐÂY LÀ ĐỀ MẪU CỦA TÔI ===\n\n${inputText}`;
     
-    // Copy to clipboard
     const tempTextArea = document.createElement("textarea");
     tempTextArea.value = finalPrompt;
     document.body.appendChild(tempTextArea);
@@ -299,106 +299,77 @@ function generateFreePrompt(aiType) {
     markSystemUsed();
 
     if (aiType === 'claude') {
-        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY SẴN VÀO CHUỘT!\n\nTrang web Claude sẽ được mở ngay sau đây.\n👉 Thầy/Cô chỉ cần bấm [Ctrl + V] vào ô chat và nhấn Enter để Claude tự động làm việc.");
+        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY VÀO BỘ NHỚ TẠM!\n👉 Vui lòng dán (Ctrl+V) vào Claude.");
         window.open("https://claude.ai/new", "_blank");
     } else if (aiType === 'gemini') {
-        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY SẴN VÀO CHUỘT!\n\nTrang web Gemini sẽ được mở ngay sau đây.\n👉 Thầy/Cô chỉ cần bấm [Ctrl + V] vào ô chat và nhấn Enter để Gemini tự động làm việc.");
+        alert("🎉 LỆNH ĐÃ ĐƯỢC COPY VÀO BỘ NHỚ TẠM!\n👉 Vui lòng dán (Ctrl+V) vào Gemini.");
         window.open("https://gemini.google.com/app", "_blank");
     }
 }
 
 // ==========================================
-// CÁCH 2 & CÁCH 4: CHẠY API TỰ ĐỘNG
+// CHẠY API TỰ ĐỘNG (CÁCH 2 & 4)
 // ==========================================
 async function generateAPI(aiType) {
     const inputText = document.getElementById('inpText').value.trim();
-    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên!");
+    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu!");
 
     const btnClaude = document.getElementById('btnGenClaudeAPI');
     const btnGemini = document.getElementById('btnGenGeminiAPI');
 
-    showStatus("Đang phân tích đề mẫu và sinh đề mới qua API. Vui lòng không đóng trình duyệt...", "loading");
+    showStatus("Đang phân tích đề mẫu và kết nối API...", "loading");
 
     try {
         let generatedText = "";
-
         if (aiType === 'claude') {
             const apiKey = document.getElementById('inpClaudeKey').value.trim();
-            if(!apiKey) return alert("Vui lòng nhập API Key của Claude!");
+            if(!apiKey) return alert("Vui lòng nhập API Key!");
             localStorage.setItem('claude_api_key', apiKey);
-            
-            btnClaude.disabled = true;
-            btnClaude.innerHTML = "⏳ Đang xử lý...";
+            btnClaude.disabled = true; btnClaude.innerHTML = "⏳ Đang xử lý...";
             
             const targetUrl = 'https://api.anthropic.com/v1/messages';
             const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
 
             const response = await fetch(proxyUrl, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-dangerously-allow-browser': 'true'
-                },
+                headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerously-allow-browser': 'true' },
                 body: JSON.stringify({
-                    model: 'claude-3-5-sonnet-20241022',
-                    max_tokens: 8192, 
-                    temperature: 0.4, 
-                    system: SYSTEM_PROMPT,
-                    messages: [
-                        { role: 'user', content: `Dưới đây là ĐỀ MẪU. Hãy dựa vào đây để biên soạn đề thi mới:\n\n<sample_exam>\n${inputText}\n</sample_exam>` }
-                    ]
+                    model: 'claude-3-5-sonnet-20241022', max_tokens: 8192, temperature: 0.4, system: getSystemPrompt(),
+                    messages: [{ role: 'user', content: `ĐỀ MẪU:\n<sample_exam>\n${inputText}\n</sample_exam>` }]
                 })
             });
 
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error?.message || `Lỗi HTTP: ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`Lỗi HTTP: ${response.status}`);
             const data = await response.json();
             generatedText = data.content[0].text;
 
         } else if (aiType === 'gemini') {
             const apiKey = document.getElementById('inpGeminiKey').value.trim();
-            if(!apiKey) return alert("Vui lòng nhập API Key của Gemini!");
+            if(!apiKey) return alert("Vui lòng nhập API Key!");
             localStorage.setItem('gemini_api_key', apiKey);
-
-            btnGemini.disabled = true;
-            btnGemini.innerHTML = "⏳ Đang xử lý...";
+            btnGemini.disabled = true; btnGemini.innerHTML = "⏳ Đang xử lý...";
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
-            
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-                    contents: [{ parts: [{ text: `Dưới đây là ĐỀ MẪU. Hãy dựa vào đây để biên soạn đề thi mới:\n\n<sample_exam>\n${inputText}\n</sample_exam>` }] }],
+                    systemInstruction: { parts: [{ text: getSystemPrompt() }] },
+                    contents: [{ parts: [{ text: `ĐỀ MẪU:\n<sample_exam>\n${inputText}\n</sample_exam>` }] }],
                     generationConfig: { temperature: 0.4 }
                 })
             });
 
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error?.message || `Lỗi HTTP: ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`Lỗi HTTP: ${response.status}`);
             const data = await response.json();
             generatedText = data.candidates[0].content.parts[0].text;
         }
 
-        // Tự động copy vào Clipboard
-        const tempTextArea = document.createElement("textarea");
-        tempTextArea.value = generatedText;
-        document.body.appendChild(tempTextArea);
-        tempTextArea.select();
-        document.execCommand("copy");
-        document.body.removeChild(tempTextArea);
-
-        showStatus("Hoàn tất! Đề thi đã được tự động copy vào bộ nhớ tạm.", "success");
-        alert("🎉 THÀNH CÔNG! Đề thi đã được AI tạo xong và COPY SẴN VÀO CHUỘT.\n👉 Hãy mở ứng dụng Word trên máy tính của bạn và bấm [Ctrl + V] để dán kết quả nhé.");
+        // Tự động gán vào ô Hậu kỳ
+        document.getElementById('postProcessInput').value = generatedText;
+        showStatus("Hoàn tất! Kết quả đã được đưa vào Trợ lý Hậu kỳ bên dưới.", "success");
+        processAIResult(); // Tự động chạy phân tích
+        document.getElementById('postProcessInput').scrollIntoView({ behavior: 'smooth' });
         
         markSystemUsed();
 
@@ -408,6 +379,93 @@ async function generateAPI(aiType) {
     } finally {
         checkLicenseStatus();
     }
+}
+
+// ==========================================
+// TRỢ LÝ HẬU KỲ (XỬ LÝ FORMAT & ĐẾM ĐÁP ÁN)
+// ==========================================
+function processAIResult() {
+    const text = document.getElementById('postProcessInput').value.trim();
+    if (!text) {
+        alert("Vui lòng dán kết quả của AI vào ô trước!");
+        return;
+    }
+
+    // 1. Phân tích thống kê (Dựa trên format: 1. A, 2. B hoặc 1A, 2B)
+    let counts = { A: 0, B: 0, C: 0, D: 0 };
+    // Tìm các cụm giống đáp án ở cuối văn bản (Phần II)
+    const matches = text.matchAll(/\b\d{1,2}[\.\-\s]*([A-D])\b/g);
+    let totalFound = 0;
+    
+    for (const match of matches) {
+        const ans = match[1].toUpperCase();
+        if (counts[ans] !== undefined) {
+            counts[ans]++;
+            totalFound++;
+        }
+    }
+
+    const box = document.getElementById('statsBox');
+    const alertBox = document.getElementById('statAlert');
+    box.style.display = 'block';
+
+    if (totalFound === 0) {
+        alertBox.style.color = 'var(--mut)';
+        alertBox.textContent = "Không tìm thấy bảng đáp án chuẩn trong văn bản để phân tích tỷ lệ.";
+        ['A','B','C','D'].forEach(k => {
+            document.getElementById(`count${k}`).textContent = '0';
+            document.getElementById(`bar${k}`).style.width = '0%';
+        });
+    } else {
+        ['A','B','C','D'].forEach(k => {
+            const pct = Math.round((counts[k] / totalFound) * 100);
+            document.getElementById(`count${k}`).textContent = `${counts[k]} (${pct}%)`;
+            document.getElementById(`bar${k}`).style.width = `${pct}%`;
+        });
+
+        alertBox.style.color = 'var(--brand-dark)';
+        alertBox.innerHTML = `Tìm thấy tổng cộng <b>${totalFound}</b> câu hỏi có đáp án. Đã hiển thị sẵn sàng nút Tải File Word.`;
+    }
+
+    document.getElementById('btnDownloadWord').style.display = 'inline-flex';
+}
+
+function downloadDocx() {
+    if (!window.docx) {
+        alert("Thư viện Word đang tải, vui lòng thử lại sau vài giây!");
+        return;
+    }
+    
+    const text = document.getElementById('postProcessInput').value;
+    if (!text.trim()) return alert("Vui lòng nhập văn bản!"); 
+
+    // Chuyển đổi Markdown **in đậm** sang Docx
+    const lines = text.split('\n');
+    const paragraphs = lines.map(line => {
+        const parts = line.split(/(\*\*.*?\*\*)/g);
+        const textRuns = parts.map(part => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+                return new docx.TextRun({ text: part.slice(2, -2), bold: true, font: "Times New Roman", size: 26 }); // 13pt
+            }
+            return new docx.TextRun({ text: part, font: "Times New Roman", size: 26 });
+        });
+        return new docx.Paragraph({ children: textRuns, spacing: { after: 100 } });
+    });
+
+    const doc = new docx.Document({
+        sections: [{ properties: {}, children: paragraphs }]
+    });
+
+    docx.Packer.toBlob(doc).then(blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `De_Thi_Hoan_Chinh_${new Date().getTime()}.docx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    });
 }
 </script>
 </body>
