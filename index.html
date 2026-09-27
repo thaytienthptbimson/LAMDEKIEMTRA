@@ -54,9 +54,8 @@ textarea{resize:vertical;min-height:200px}
   <div class="card" style="background:linear-gradient(135deg, #7c3aed, #0284c7); color:#fff; padding:40px 32px">
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
         <h1 style="color:#fff;font-size:28px">AI Exam Generator (Claude & Gemini)</h1>
-        <button class="btn sm" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.4);" onclick="resetAllTrials()">🔄 Reset tất cả lượt dùng thử</button>
     </div>
-    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (Bịa nguồn) và hỗ trợ xuất file Word chuẩn form.</div>
+    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và tự động sinh đề tương đương độ khó, đảm bảo chống Hallucinate (Bịa nguồn). Mỗi lần sử dụng sẽ tốn 1 lượt dùng.</div>
   </div>
 
   <div class="card">
@@ -80,15 +79,6 @@ textarea{resize:vertical;min-height:200px}
             <span id="freeTrialBadge" style="background:#f59e0b; color:#fff; padding:4px 12px; border-radius:999px; font-size:12.5px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.05)"></span>
         </div>
         <p style="font-size:14px; color:#15803d; margin-top:0; margin-bottom:16px;">Hệ thống sẽ đóng gói Đề mẫu & Quy tắc thành một Lệnh chuẩn, tự động copy và mở web AI. Việc của bạn chỉ là bấm <b>Ctrl + V</b> vào ô chat.</p>
-        
-        <!-- Ô nhập Pass Mở khóa -->
-        <div id="freeUnlockWrap" style="display:none; margin-bottom:16px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px;">
-            <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hết lượt thử. Vui lòng đăng nhập mật khẩu để dùng tiếp:</label>
-            <div style="display:flex; gap:10px; flex-wrap:wrap">
-                <input type="password" id="inpFreePassword" placeholder="Mật khẩu..." style="flex:1; border-color:#fde047;">
-                <button class="btn" style="background:#ca8a04; color:#fff; border:none;" onclick="unlockFreeMode()">Đăng Nhập</button>
-            </div>
-        </div>
 
         <div class="grid-2">
             <button class="btn" id="btnGenClaudeFree" style="background:#16a34a; border-color:#16a34a; font-size:14.5px" onclick="generateFreePrompt('claude')">
@@ -126,25 +116,31 @@ textarea{resize:vertical;min-height:200px}
             </div>
         </div>
     </div>
+    
+    <!-- Ô nhập Pass Mở khóa -->
+    <div id="unlockWrap" style="display:none; margin-bottom:16px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px;">
+        <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hệ thống. Vui lòng đăng nhập mật khẩu để dùng tiếp:</label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+            <input type="password" id="inpUnlockPassword" placeholder="Mật khẩu..." style="flex:1; border-color:#fde047;">
+            <button class="btn" style="background:#ca8a04; color:#fff; border:none;" onclick="unlockSystem()">Đăng Nhập</button>
+        </div>
+    </div>
 
   </div>
 
   <div id="statusBox"></div>
 
   <!-- VÙNG KẾT QUẢ VÀ XUẤT FILE ĐỀ THI -->
-  <div class="card" id="outputWrap">
+  <div class="card" id="outputWrap" style="display:none">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-      <h2 id="outputTitle" style="margin:0;color:var(--ok);font-size:20px;">✅ Kết Quả & Xuất File</h2>
+      <h2 id="outputTitle" style="margin:0;color:var(--ok);font-size:20px;">✅ Lệnh Đã Tạo Xong (Dán Đè Kết Quả Của AI Vào Đây)</h2>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-outline sm" onclick="copyResult()">📋 Copy Tất Cả</button>
-        <button class="btn primary sm" onclick="downloadResult()">💾 Tải File Text</button>
-        <button class="btn sm" style="background:#2563eb;color:#fff;border:none" onclick="downloadDocx()">📄 Tải File Word (.docx)</button>
       </div>
     </div>
     
     <div id="outputGuide" style="font-size:13.5px;color:var(--mut);margin-bottom:12px;background:#f8fafc;padding:12px;border-radius:8px;border:1px dashed var(--line)">
-        <i>* Nếu dùng <b>Cách 1</b> hoặc <b>Cách 3</b>: Lệnh đã được sao chép. Bạn hãy dán (Ctrl+V) vào Claude/Gemini. Khi AI làm xong, hãy copy đáp án và <b>DÁN ĐÈ VÀO Ô NÀY</b> rồi bấm "Tải File Word (.docx)".<br>
-        * Nếu dùng <b>Cách 2</b> hoặc <b>Cách 4</b>: Kết quả đề thi sẽ tự động hiển thị ở đây.</i>
+        <i>* Lệnh đã được sao chép. Bạn hãy dán (Ctrl+V) vào Claude/Gemini.<br>
     </div>
     
     <textarea id="outText" placeholder="Kết quả tạo đề sẽ hiện ở đây, hoặc bạn dán kết quả thủ công vào đây..." style="min-height:500px;font-family:'Times New Roman',serif;font-size:16px"></textarea>
@@ -155,8 +151,7 @@ textarea{resize:vertical;min-height:200px}
 // ==========================================
 // CẤU HÌNH VÀ SYSTEM PROMPT
 // ==========================================
-const MAX_FREE_TRIALS = 1;
-const VALID_FREE_PASSWORD = "phamtien17081983@";
+const VALID_PASSWORD = "phamtien17081983@";
 
 const SYSTEM_PROMPT = `Bạn là một chuyên gia khảo thí và biên soạn đề thi Tiếng Anh cấp cao. 
 Nhiệm vụ của bạn là phân tích "ĐỀ MẪU" do người dùng cung cấp và biên soạn ra một "ĐỀ THI MỚI" tuân thủ NGHIÊM NGẶT 100% các quy tắc sau:
@@ -195,69 +190,68 @@ Cấu trúc phần này:
 - Giải thích chi tiết cho từng câu (Tại sao đúng, tại sao sai, dịch nghĩa nếu cần).`;
 
 // ==========================================
-// KIỂM TRA TRẠNG THÁI DÙNG THỬ (CÁCH 1 & 3)
+// KIỂM TRA TRẠNG THÁI SỬ DỤNG
 // ==========================================
 function checkLicenseStatus() {
-    const isFreeActivated = localStorage.getItem('ai_free_activated') === 'true';
-    const freeTrialCount = parseInt(localStorage.getItem('ai_free_trials') || '0');
+    const hasUsed = sessionStorage.getItem('ai_system_used') === 'true';
     
-    const badgeFree = document.getElementById('freeTrialBadge');
-    const unlockWrapFree = document.getElementById('freeUnlockWrap');
+    const unlockWrap = document.getElementById('unlockWrap');
     const btnGenC = document.getElementById('btnGenClaudeFree');
     const btnGenG = document.getElementById('btnGenGeminiFree');
+    const btnAPI_C = document.getElementById('btnGenClaudeAPI');
+    const btnAPI_G = document.getElementById('btnGenGeminiAPI');
 
-    if (isFreeActivated) {
-        badgeFree.style.background = '#16a34a';
-        badgeFree.textContent = '✓ Đã mở khóa đăng nhập';
-        unlockWrapFree.style.display = 'none';
+    if (hasUsed) {
+        unlockWrap.style.display = 'block';
+        btnGenC.disabled = true;
+        btnGenG.disabled = true;
+        btnAPI_C.disabled = true;
+        btnAPI_G.disabled = true;
+        
+        btnGenC.innerHTML = "🔒 ĐÃ KHÓA CÁCH 1";
+        btnGenG.innerHTML = "🔒 ĐÃ KHÓA CÁCH 3";
+        btnAPI_C.innerHTML = "🔒 ĐÃ KHÓA CÁCH 2";
+        btnAPI_G.innerHTML = "🔒 ĐÃ KHÓA CÁCH 4";
+    } else {
+        unlockWrap.style.display = 'none';
         btnGenC.disabled = false;
         btnGenG.disabled = false;
+        btnAPI_C.disabled = false;
+        btnAPI_G.disabled = false;
+        
         btnGenC.innerHTML = "📋 CÁCH 1: LỆNH CHO CLAUDE";
         btnGenG.innerHTML = "📋 CÁCH 3: LỆNH CHO GEMINI";
-    } else {
-        const remainingFree = MAX_FREE_TRIALS - freeTrialCount;
-        if (remainingFree > 0) {
-            badgeFree.style.background = '#f59e0b';
-            badgeFree.textContent = `Dùng thử: ${remainingFree}/${MAX_FREE_TRIALS} lần`;
-            unlockWrapFree.style.display = 'none';
-            btnGenC.disabled = false;
-            btnGenG.disabled = false;
-        } else {
-            badgeFree.style.background = '#dc2626';
-            badgeFree.textContent = `Đã hết lượt dùng thử`;
-            unlockWrapFree.style.display = 'block';
-            btnGenC.disabled = true;
-            btnGenG.disabled = true;
-            btnGenC.innerHTML = "🔒 ĐÃ KHÓA CÁCH 1";
-            btnGenG.innerHTML = "🔒 ĐÃ KHÓA CÁCH 3";
-        }
+        btnAPI_C.innerHTML = "🚀 CÁCH 2: CLAUDE API";
+        btnAPI_G.innerHTML = "🚀 CÁCH 4: GEMINI API";
     }
 }
 
-function resetAllTrials() {
-    if(confirm("Bạn có chắc chắn muốn làm mới (Reset) lại toàn bộ lượt dùng thử?")) {
-        localStorage.setItem('ai_free_trials', '0');
-        localStorage.removeItem('ai_free_activated'); 
+function unlockSystem() {
+    const pwd = document.getElementById('inpUnlockPassword').value;
+    if (pwd === VALID_PASSWORD) {
+        sessionStorage.removeItem('ai_system_used');
+        alert("🎉 Đăng nhập thành công! Hệ thống đã được mở khóa cho 1 lần sử dụng tiếp theo.");
         checkLicenseStatus();
-        alert("🔄 Đã làm mới số lượt dùng thử về 0 thành công!");
-    }
-}
-
-function unlockFreeMode() {
-    const pwd = document.getElementById('inpFreePassword').value;
-    if (pwd === VALID_FREE_PASSWORD) {
-        localStorage.setItem('ai_free_activated', 'true');
-        alert("🎉 Đăng nhập thành công! Đã mở khóa tính năng Tạo Lệnh Miễn Phí vĩnh viễn.");
-        checkLicenseStatus();
-        document.getElementById('inpFreePassword').value = '';
+        document.getElementById('inpUnlockPassword').value = '';
     } else {
         alert("❌ Mật khẩu không chính xác!");
     }
 }
 
-window.onload = () => {
+function markSystemUsed() {
+    sessionStorage.setItem('ai_system_used', 'true');
     checkLicenseStatus();
-    document.getElementById('outputWrap').style.display = 'block';
+}
+
+window.onload = () => {
+    // Mỗi khi reload trang, coi như 1 lần sử dụng mới nếu chưa reset
+    if (!sessionStorage.getItem('ai_system_used_reload_flag')) {
+        sessionStorage.setItem('ai_system_used_reload_flag', 'true');
+    } else {
+         markSystemUsed();
+    }
+    
+    checkLicenseStatus();
     
     const savedC = localStorage.getItem('claude_api_key');
     const savedG = localStorage.getItem('gemini_api_key');
@@ -309,14 +303,6 @@ function showStatus(msg, type) {
 // CÁCH 1 & CÁCH 3: TẠO PROMPT COPY VÀ HIỂN THỊ VÀO TEXTAREA
 // ==========================================
 function generateFreePrompt(aiType) {
-    const isActivated = localStorage.getItem('ai_free_activated') === 'true';
-    let trialCount = parseInt(localStorage.getItem('ai_free_trials') || '0');
-
-    if (!isActivated && trialCount >= MAX_FREE_TRIALS) {
-        checkLicenseStatus();
-        return;
-    }
-
     const inputText = document.getElementById('inpText').value.trim();
     if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên trước!");
 
@@ -325,6 +311,7 @@ function generateFreePrompt(aiType) {
     // In nội dung vào ô kết quả
     document.getElementById('outText').value = finalPrompt;
     document.getElementById('outputTitle').innerHTML = "⏳ Lệnh Đã Tạo Xong (Dán Đè Kết Quả Của AI Vào Đây)";
+    document.getElementById('outputWrap').style.display = 'block';
     document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
 
     // Copy to clipboard
@@ -335,11 +322,7 @@ function generateFreePrompt(aiType) {
     document.execCommand("copy");
     document.body.removeChild(tempTextArea);
 
-    if (!isActivated) {
-        trialCount++;
-        localStorage.setItem('ai_free_trials', trialCount.toString());
-        checkLicenseStatus();
-    }
+    markSystemUsed();
 
     if (aiType === 'claude') {
         alert("🎉 LỆNH ĐÃ ĐƯỢC COPY SẴN VÀO CHUỘT!\n\nTrang web Claude sẽ được mở ngay sau đây.\n👉 Thầy/Cô chỉ cần bấm [Ctrl + V] vào ô chat và nhấn Enter để Claude tự động làm việc.");
@@ -360,7 +343,7 @@ async function generateAPI(aiType) {
     const btnClaude = document.getElementById('btnGenClaudeAPI');
     const btnGemini = document.getElementById('btnGenGeminiAPI');
 
-    document.getElementById('outputTitle').innerHTML = "✅ Kết Quả Đề Thi";
+    document.getElementById('outputTitle').innerHTML = "✅ Lệnh Đã Tạo Xong (Dán Đè Kết Quả Của AI Vào Đây)";
     showStatus("Đang phân tích đề mẫu và sinh đề mới qua API. Vui lòng không đóng trình duyệt...", "loading");
 
     try {
@@ -431,23 +414,20 @@ async function generateAPI(aiType) {
             document.getElementById('outText').value = data.candidates[0].content.parts[0].text;
         }
 
+        document.getElementById('outputWrap').style.display = 'block';
         showStatus("Hoàn tất! Đề thi tự động đã được tạo thành công.", "success");
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth' });
+        
+        markSystemUsed();
 
     } catch (error) {
         console.error(error);
         showStatus("Lỗi: " + error.message, "error");
     } finally {
-        btnClaude.disabled = false;
-        btnClaude.innerHTML = "🚀 CÁCH 2: CLAUDE API";
-        btnGemini.disabled = false;
-        btnGemini.innerHTML = "🚀 CÁCH 4: GEMINI API";
+        checkLicenseStatus();
     }
 }
 
-// ==========================================
-// XUẤT FILE VÀ COPY
-// ==========================================
 function copyResult() {
     const text = document.getElementById('outText');
     if (!text.value.trim()) return alert('Chưa có nội dung đề thi!');
@@ -456,60 +436,6 @@ function copyResult() {
     alert('Đã copy toàn bộ nội dung đề thi vào bộ nhớ tạm!');
 }
 
-function downloadResult() {
-    const text = document.getElementById('outText').value;
-    if (!text.trim()) return alert('Chưa có nội dung đề thi!');
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `De_Thi_AI_${new Date().getTime()}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
-
-// Hàm xuất file Word DOCX sử dụng thư viện docx.js (Hỗ trợ in đậm Markdown)
-function downloadDocx() {
-    if (!window.docx) {
-        alert("Thư viện xuất file Word chưa tải xong. Vui lòng kiểm tra kết nối mạng!");
-        return;
-    }
-    
-    const text = document.getElementById('outText').value;
-    if (!text.trim()) { 
-        alert("Vui lòng có nội dung trong ô kết quả trước khi tải file Word!"); 
-        return; 
-    }
-
-    const lines = text.split('\n');
-    const paragraphs = lines.map(line => {
-        const parts = line.split(/(\*\*.*?\*\*)/g);
-        const textRuns = parts.map(part => {
-            if (part.startsWith('**') && part.endsWith('**')) {
-                return new docx.TextRun({ text: part.slice(2, -2), bold: true, font: "Times New Roman", size: 28 }); // size 28 = 14pt
-            }
-            return new docx.TextRun({ text: part, font: "Times New Roman", size: 28 });
-        });
-        return new docx.Paragraph({ children: textRuns });
-    });
-
-    const doc = new docx.Document({
-        sections: [{ properties: {}, children: paragraphs }]
-    });
-
-    docx.Packer.toBlob(doc).then(blob => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `De_Thi_AI_${new Date().getTime()}.docx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    });
-}
 </script>
 </body>
 </html>
