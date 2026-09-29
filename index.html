@@ -6,6 +6,8 @@
 <title>Công Cụ Sinh Đề Thi Bằng AI (Claude & Gemini)</title>
 <!-- Thư viện xuất file Word (.docx) -->
 <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+<!-- Thư viện đọc file Word (.docx) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
 :root{
   --bg:#f4f6fb;--card:#ffffff;--ink:#1e293b;--mut:#64748b;--line:#e2e8f0;
@@ -69,8 +71,11 @@ textarea{resize:vertical;min-height:180px}
     </div>
 
     <div class="form-group">
-      <label>2. Dán Nội Dung Đề Mẫu</label>
-      <textarea id="inpText" placeholder="Dán nội dung đề thi mẫu của bạn vào đây..."></textarea>
+      <label>2. Dán Nội Dung Đề Mẫu hoặc Tải lên File (.docx)</label>
+      <!-- Nút tải file lên -->
+      <input type="file" id="fileInput" accept=".docx,.doc" style="margin-bottom: 12px; background: #fff; cursor: pointer; display: block; width: 100%; padding: 8px; border: 1.5px dashed var(--brand); border-radius: 8px;" onchange="handleFileUpload(event)">
+      <!-- Ô chứa nội dung -->
+      <textarea id="inpText" placeholder="Dán nội dung đề thi mẫu của bạn vào đây hoặc tải lên file Word ở nút bên trên..."></textarea>
     </div>
 
     <!-- TẠO LỆNH THỦ CÔNG -->
@@ -285,7 +290,7 @@ function showStatus(msg, type) {
 // ==========================================
 function generateFreePrompt(aiType) {
     const inputText = document.getElementById('inpText').value.trim();
-    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu!");
+    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên!");
 
     const finalPrompt = `${getSystemPrompt()}\n\n=== DƯỚI ĐÂY LÀ ĐỀ MẪU CỦA TÔI ===\n\n${inputText}`;
     
@@ -312,7 +317,7 @@ function generateFreePrompt(aiType) {
 // ==========================================
 async function generateAPI(aiType) {
     const inputText = document.getElementById('inpText').value.trim();
-    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu!");
+    if(!inputText) return alert("Vui lòng dán nội dung đề mẫu hoặc tải file lên!");
 
     const btnClaude = document.getElementById('btnGenClaudeAPI');
     const btnGemini = document.getElementById('btnGenGeminiAPI');
@@ -378,6 +383,44 @@ async function generateAPI(aiType) {
         showStatus("Lỗi: " + error.message, "error");
     } finally {
         checkLicenseStatus();
+    }
+}
+
+// ==========================================
+// ĐỌC FILE WORD (.DOCX) TẢI LÊN
+// ==========================================
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Hiển thị trạng thái đang đọc
+    showStatus("Đang đọc nội dung file...", "loading");
+
+    if (file.name.toLowerCase().endsWith('.docx')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const arrayBuffer = e.target.result;
+            mammoth.extractRawText({arrayBuffer: arrayBuffer})
+                .then(function(result) {
+                    // Gán nội dung đọc được vào ô textarea
+                    document.getElementById('inpText').value = result.value;
+                    showStatus("Đã tải và trích xuất file " + file.name + " thành công!", "success");
+                    
+                    if(result.messages && result.messages.length > 0) {
+                        console.log("Mammoth messages:", result.messages);
+                    }
+                })
+                .catch(function(err) {
+                    console.error(err);
+                    showStatus("Lỗi đọc file: " + err.message, "error");
+                });
+        };
+        reader.readAsArrayBuffer(file);
+    } 
+    else if (file.name.toLowerCase().endsWith('.doc')) {
+        showStatus("Hệ thống hỗ trợ đọc file .docx tốt nhất. Với file .doc cũ, vui lòng 'Save As' sang định dạng .docx hoặc mở file ra và Copy/Paste thủ công nhé!", "error");
+    } else {
+        showStatus("Định dạng file không được hỗ trợ. Vui lòng chọn file .docx!", "error");
     }
 }
 
