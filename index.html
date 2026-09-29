@@ -56,12 +56,14 @@ textarea{resize:vertical;min-height:180px}
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
         <h1 style="color:#fff;font-size:28px">AI Exam Generator Pro</h1>
     </div>
-    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và sinh đề tương đương. Mỗi lần load trang hoặc chạy lệnh được tính là 1 lần sử dụng.</div>
+    <div style="opacity:0.9;font-size:15px; margin-top:8px;">Hệ thống phân tích đề mẫu và sinh đề tương đương. Mỗi lần chạy lệnh được tính là 1 lần sử dụng.</div>
+    <!-- Hiển thị số lượt dùng -->
+    <div id="usageInfo" style="margin-top:12px; font-weight:bold; color:#fef08a; font-size:15px;"></div>
   </div>
 
   <div class="card">
     <div class="form-group">
-      <label>1. Tùy chọn phạm vi sinh đề (Mới)</label>
+      <label>1. Tùy chọn phạm vi sinh đề</label>
       <select id="examScope">
           <option value="full">Sinh toàn bộ đề thi (50 câu)</option>
           <option value="grammar">Chỉ sinh phần Trắc nghiệm Từ vựng & Ngữ pháp</option>
@@ -72,9 +74,7 @@ textarea{resize:vertical;min-height:180px}
 
     <div class="form-group">
       <label>2. Dán Nội Dung Đề Mẫu hoặc Tải lên File (.docx)</label>
-      <!-- Nút tải file lên -->
       <input type="file" id="fileInput" accept=".docx,.doc" style="margin-bottom: 12px; background: #fff; cursor: pointer; display:block; width:100%; padding:8px; border:1px solid var(--line); border-radius:8px;" onchange="handleFileUpload(event)">
-      <!-- Ô chứa nội dung -->
       <textarea id="inpText" placeholder="Dán nội dung đề thi mẫu của bạn vào đây hoặc tải lên file Word..."></textarea>
     </div>
 
@@ -119,9 +119,9 @@ textarea{resize:vertical;min-height:180px}
         </div>
     </div>
     
-    <!-- Ô nhập Pass Mở khóa (Ẩn đi cho đến khi dùng hết 1 lượt) -->
+    <!-- Ô nhập Pass Mở khóa -->
     <div id="unlockWrap" style="display:none; margin-bottom:16px; padding:16px; background:#fffbeb; border:1px dashed #f59e0b; border-radius:8px;">
-        <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hết lượt. Vui lòng đăng nhập mật khẩu để tiếp tục 1 lần dùng:</label>
+        <label style="color:#b45309; font-weight:bold; margin-bottom:8px; font-size:13.5px;">🔒 Bạn đã dùng hết 10 lượt. Vui lòng đăng nhập mật khẩu để tiếp tục 10 lần dùng nữa:</label>
         <div style="display:flex; gap:10px; flex-wrap:wrap">
             <input type="password" id="inpUnlockPassword" placeholder="Mật khẩu..." style="flex:1; border-color:#fde047;">
             <button class="btn" style="background:#ca8a04; color:#fff; border:none;" onclick="unlockSystem()">Đăng Nhập</button>
@@ -176,6 +176,7 @@ textarea{resize:vertical;min-height:180px}
 // CẤU HÌNH VÀ BẢO MẬT
 // ==========================================
 const VALID_PASSWORD = "phamtien17081983@";
+const MAX_USES = 10; // Cấu hình số lần dùng thử
 
 function getSystemPrompt() {
     const scope = document.getElementById('examScope').value;
@@ -222,37 +223,47 @@ Phải được đặt tách biệt hoàn toàn ở cuối cùng.
 }
 
 // ==========================================
-// KIỂM TRA TRẠNG THÁI SỬ DỤNG
+// KIỂM TRA TRẠNG THÁI SỬ DỤNG (10 LẦN)
 // ==========================================
+function getUsageCount() {
+    return parseInt(localStorage.getItem('ai_system_usage_count') || '0');
+}
+
 function checkLicenseStatus() {
-    const hasUsed = sessionStorage.getItem('ai_system_used') === 'true';
+    const count = getUsageCount();
+    const hasUsedAll = count >= MAX_USES;
     
     const unlockWrap = document.getElementById('unlockWrap');
     const btnGenC = document.getElementById('btnGenClaudeFree');
     const btnGenG = document.getElementById('btnGenGeminiFree');
     const btnAPI_C = document.getElementById('btnGenClaudeAPI');
     const btnAPI_G = document.getElementById('btnGenGeminiAPI');
+    const usageInfo = document.getElementById('usageInfo');
 
-    if (hasUsed) {
+    if (hasUsedAll) {
         unlockWrap.style.display = 'block';
         btnGenC.disabled = true; btnGenG.disabled = true;
         btnAPI_C.disabled = true; btnAPI_G.disabled = true;
         btnGenC.innerHTML = "🔒 ĐÃ KHÓA CÁCH 1"; btnGenG.innerHTML = "🔒 ĐÃ KHÓA CÁCH 3";
         btnAPI_C.innerHTML = "🔒 ĐÃ KHÓA CÁCH 2"; btnAPI_G.innerHTML = "🔒 ĐÃ KHÓA CÁCH 4";
+        usageInfo.innerHTML = `🚫 Bạn đã dùng hết ${MAX_USES}/${MAX_USES} lượt miễn phí.`;
+        usageInfo.style.color = "#fca5a5"; // Đỏ nhạt
     } else {
         unlockWrap.style.display = 'none';
         btnGenC.disabled = false; btnGenG.disabled = false;
         btnAPI_C.disabled = false; btnAPI_G.disabled = false;
         btnGenC.innerHTML = "📋 CÁCH 1: LỆNH CHO CLAUDE"; btnGenG.innerHTML = "📋 CÁCH 3: LỆNH CHO GEMINI";
-        btnAPI_C.innerHTML = "🚀 CÁCH 2: CLAUDE API"; btnAPI_G.innerHTML = "🚀 CÁCH 4: GEMINI API";
+        btnAPI_C.innerHTML = "🚀 CÁCH 2: CHẠY CLAUDE API"; btnAPI_G.innerHTML = "🚀 CÁCH 4: CHẠY GEMINI API";
+        usageInfo.innerHTML = `✅ Bạn còn ${MAX_USES - count} lượt sử dụng miễn phí.`;
+        usageInfo.style.color = "#fef08a"; // Vàng nhạt
     }
 }
 
 function unlockSystem() {
     const pwd = document.getElementById('inpUnlockPassword').value;
     if (pwd === VALID_PASSWORD) {
-        sessionStorage.removeItem('ai_system_used');
-        alert("🎉 Đăng nhập thành công! Hệ thống đã được mở khóa cho 1 lần sử dụng tiếp theo.");
+        localStorage.setItem('ai_system_usage_count', '0');
+        alert(`🎉 Đăng nhập thành công! Hệ thống đã được mở khóa cho ${MAX_USES} lần sử dụng tiếp theo.`);
         checkLicenseStatus();
         document.getElementById('inpUnlockPassword').value = '';
     } else {
@@ -261,18 +272,17 @@ function unlockSystem() {
 }
 
 function markSystemUsed() {
-    sessionStorage.setItem('ai_system_used', 'true');
+    let count = getUsageCount();
+    count++;
+    localStorage.setItem('ai_system_usage_count', count.toString());
     checkLicenseStatus();
 }
 
 window.onload = () => {
-    if (!sessionStorage.getItem('ai_system_used_reload_flag')) {
-        sessionStorage.setItem('ai_system_used_reload_flag', 'true');
-    } else {
-         markSystemUsed();
-    }
+    // Gọi hàm kiểm tra ngay khi load trang
     checkLicenseStatus();
     
+    // Khôi phục API Key nếu đã lưu
     const savedC = localStorage.getItem('claude_api_key');
     const savedG = localStorage.getItem('gemini_api_key');
     if(savedC) document.getElementById('inpClaudeKey').value = savedC;
@@ -300,22 +310,19 @@ function handleFileUpload(event) {
         reader.onload = function(e) {
             const arrayBuffer = e.target.result;
             
-            // Dùng convertToHtml thay vì extractRawText để lấy được thẻ in đậm / gạch chân
             mammoth.convertToHtml({arrayBuffer: arrayBuffer})
                 .then(function(result) {
                     let html = result.value;
                     
-                    // Chuyển HTML sang Markdown cơ bản để AI hiểu được
                     let text = html
                         .replace(/<strong>(.*?)<\/strong>/g, '**$1**')
                         .replace(/<b>(.*?)<\/b>/g, '**$1**')
                         .replace(/<u>(.*?)<\/u>/g, '__$1__')
                         .replace(/<br\s*[\/]?>/g, '\n')
                         .replace(/<\/p>/g, '\n\n')
-                        .replace(/<[^>]+>/g, '') // Xóa các thẻ HTML còn lại
-                        .replace(/\n\s*\n/g, '\n\n'); // Xóa các dòng trống thừa
+                        .replace(/<[^>]+>/g, '') 
+                        .replace(/\n\s*\n/g, '\n\n'); 
                     
-                    // Giải mã HTML Entities (như &amp; thành &)
                     const tempTextarea = document.createElement("textarea");
                     tempTextarea.innerHTML = text;
                     text = tempTextarea.value;
@@ -422,10 +429,9 @@ async function generateAPI(aiType) {
             generatedText = data.candidates[0].content.parts[0].text;
         }
 
-        // Tự động gán vào ô Hậu kỳ
         document.getElementById('postProcessInput').value = generatedText;
         showStatus("Hoàn tất! Kết quả đã được đưa vào Trợ lý Hậu kỳ bên dưới.", "success");
-        processAIResult(); // Tự động chạy phân tích
+        processAIResult(); 
         document.getElementById('postProcessInput').scrollIntoView({ behavior: 'smooth' });
         
         markSystemUsed();
@@ -496,7 +502,6 @@ function downloadDocx() {
 
     const lines = text.split('\n');
     const paragraphs = lines.map(line => {
-        // Hỗ trợ cả in đậm (**) và gạch chân (__) khi xuất ra file Word
         const parts = line.split(/(\*\*.*?\*\*|__.*?__)/g);
         const textRuns = parts.map(part => {
             if (part.startsWith('**') && part.endsWith('**')) {
